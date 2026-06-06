@@ -780,7 +780,8 @@ select.form-input option { background: var(--card); }
   .stat-item:nth-child(odd) { border-right: 1px solid var(--border); }
   .stat-item:last-child, .stat-item:nth-last-child(2):nth-child(odd) { border-bottom: none; }
   .profile-inner { flex-direction: column; align-items: flex-start; }
-  .page { padding-bottom: 70px; }
+  .page { padding-bottom: 80px; }
+  body { padding-bottom: 62px; }
 }
 
 /* BOTTOM NAV - mobile only */
@@ -789,17 +790,19 @@ select.form-input option { background: var(--card); }
 }
 @media (max-width: 600px) {
   .bottom-nav {
-    display: flex;
+    display: flex !important;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: 60px;
-    background: rgba(6,13,26,0.98);
+    height: 62px;
+    background: rgba(6,13,26,0.99);
     border-top: 1px solid var(--border);
-    z-index: 100;
+    z-index: 9999;
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     justify-content: space-around;
     align-items: center;
-    padding: 0 4px;
+    padding: 0;
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.5);
   }
   .bnav-btn {
     display: flex;
@@ -808,19 +811,23 @@ select.form-input option { background: var(--card); }
     justify-content: center;
     gap: 3px;
     flex: 1;
+    min-width: 0;
     height: 100%;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     border: none;
     background: transparent;
     color: var(--text3);
     font-family: 'Exo 2', sans-serif;
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.3px;
-    transition: color 0.2s;
-    padding: 0;
+    letter-spacing: 0;
+    transition: color 0.15s;
+    padding: 8px 2px;
+    overflow: hidden;
+    touch-action: manipulation;
   }
-  .bnav-btn .bnav-icon { font-size: 20px; line-height: 1; }
+  .bnav-btn .bnav-icon { font-size: 20px; line-height: 1; display: block; }
   .bnav-btn.active, .bnav-btn:active { color: var(--cyan); }
   .bnav-btn.active .bnav-icon { filter: drop-shadow(0 0 6px var(--cyan)); }
   /* loading screen fix */
@@ -1628,7 +1635,8 @@ const firebaseConfig = {
 // INIT
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch(() => {});
+// Persist login across sessions
+setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Persistence:', e));
 const db = getDatabase(app);
 
 let currentUser = null;
@@ -1758,7 +1766,8 @@ window.login = async function() {
   btn.innerHTML = '<span class="spinner"></span> Logging in...'; btn.disabled = true;
 
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    await setPersistence(auth, browserLocalPersistence).catch(()=>{});
+  await signInWithEmailAndPassword(auth, email, pass);
     const snap = await get(child(ref(db), `users/${auth.currentUser.uid}`));
     if (snap.exists()) { currentUserData = snap.val(); updateNavUser(); }
     showPage('profile'); loadProfileData();
@@ -1914,7 +1923,8 @@ window.loadRanking = async function() {
     renderRanking(rankingData);
     document.getElementById('statPlayers').textContent = rankingData.length;
   } catch(e) {
-    container.innerHTML = `<div class="card text-center" style="padding:40px;color:var(--red)">❌ Data load হয়নি।</div>`;
+    console.error('Ranking error:', e);
+    container.innerHTML = `<div class="card text-center" style="padding:40px;color:var(--red)">❌ Data load হয়নি। Error: ${e.message}</div>`;
   }
 };
 
@@ -2469,7 +2479,6 @@ window.searchOpponentLive = async function() {
     container.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px">🔄 Loading players...</div>';
     const snap = await get(ref(db, 'users'));
     if (!snap.exists()) { container.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px">কোনো player নেই।</div>'; return; }
-    allUsersCache = [];
     snap.forEach(c => allUsersCache.push({ uid: c.key, ...c.val() }));
   }
 
@@ -2929,7 +2938,8 @@ async function loadHomeTopPlayers() {
       </div>`;
     }).join('');
   } catch(e) {
-    container.innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px">Data load হয়নি।</div>';
+    console.error('TopPlayers error:', e);
+    container.innerHTML = `<div style="color:var(--red);text-align:center;padding:20px">❌ ${e.message}</div>`;
   }
 }
 
@@ -2986,7 +2996,6 @@ window.deleteMatchFromHome = async function(id) {
 // ════════════════════════════════════════
 // 🔍 PUBLIC PROFILE + HOME SEARCH
 // ════════════════════════════════════════
-let allUsersCache = [];
 
 async function getAllUsers() {
   if (allUsersCache.length) return allUsersCache;
