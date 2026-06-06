@@ -1645,6 +1645,7 @@ let rankingData = [];
 let matchesData = [];
 let editAvatarBase64 = null;
 let regAvatarBase64 = null;
+let allUsersCache = [];
 
 // ── AUTH STATE ──
 // Initial home page load
@@ -2466,7 +2467,6 @@ window.loadFriendlyResults = async function() {
 
 // ── Opponent Search (Live) ──
 let selectedOpponent = null;
-let allUsersCache = [];
 
 window.searchOpponentLive = async function() {
   const q = document.getElementById('opponentSearchInput').value.trim().toLowerCase();
