@@ -1202,11 +1202,15 @@ select.form-input option { background: var(--card); }
           <div class="match-add-grid">
             <div class="form-group">
               <label class="form-label">Home Player</label>
-              <input type="text" class="form-input" id="mHomePlayer" placeholder="Home player name">
+              <select class="form-input" id="mHomePlayer">
+                <option value="">— Player select করুন —</option>
+              </select>
             </div>
             <div class="form-group">
               <label class="form-label">Away Player</label>
-              <input type="text" class="form-input" id="mAwayPlayer" placeholder="Away player name">
+              <select class="form-input" id="mAwayPlayer">
+                <option value="">— Player select করুন —</option>
+              </select>
             </div>
             <div class="form-group">
               <label class="form-label">Home Score</label>
@@ -1626,7 +1630,19 @@ window.resetPassword = async function() {
 };
 
 // ── LOAD PROFILE ──
-window.loadProfileData = function() {
+window.loadProfileData = async function() {
+  if (!currentUser) return;
+
+  // Firebase থেকে সবসময় fresh data আনো
+  try {
+    const snap = await get(child(ref(db), `users/${currentUser.uid}`));
+    if (snap.exists()) {
+      currentUserData = snap.val();
+    }
+  } catch(e) {
+    console.error('Profile load error:', e);
+  }
+
   if (!currentUserData) return;
   const d = currentUserData;
 
@@ -1666,6 +1682,9 @@ window.loadProfileData = function() {
     document.getElementById('detWR').textContent = wp + '%';
     document.getElementById('detAvgG').textContent = (gf/m).toFixed(2);
     document.getElementById('detCSR').textContent = ((cs/m)*100).toFixed(1) + '%';
+  } else {
+    document.getElementById('noStatsMsg').classList.remove('hidden');
+    document.getElementById('statsDetail').classList.add('hidden');
   }
 
   // Achievements
@@ -1677,6 +1696,9 @@ window.loadProfileData = function() {
   document.getElementById('editDistrict').value = d.district || '';
   const ea = document.getElementById('editAvatarPreview');
   if (d.avatarUrl) ea.innerHTML = `<img src="${d.avatarUrl}">`;
+
+  // Nav avatar update
+  updateNavUser();
 };
 
 // ── ACHIEVEMENTS ──
@@ -1942,10 +1964,53 @@ window.adminLogin = function() {
     loadAllPlayers();
     loadAdminMatches();
     loadResultRequests();
+    populatePlayerDropdowns(); // Match form এ player dropdown populate করো
   } else {
     errEl.textContent = '❌ Password ভুল!'; errEl.classList.add('show');
   }
 };
+
+// ── Match Form Player Dropdowns ──
+async function populatePlayerDropdowns() {
+  const snap = await get(ref(db, 'users'));
+  if (!snap.exists()) return;
+  const players = [];
+  snap.forEach(c => players.push({ uid: c.key, ...c.val() }));
+  players.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const opts = players.map(p =>
+    `<option value="${p.name}">${p.name} (@${p.username || '—'}) — ${p.club || '—'}</option>`
+  ).join('');
+
+  const homeEl = document.getElementById('mHomePlayer');
+  const awayEl = document.getElementById('mAwayPlayer');
+  const fHomeEl = document.getElementById('fHomePlayer');
+  const fAwayEl = document.getElementById('fAwayPlayer');
+
+  const baseOpt = '<option value="">— Player select করুন —</option>';
+  if (homeEl) homeEl.innerHTML = baseOpt + opts;
+  if (awayEl) awayEl.innerHTML = baseOpt + opts;
+
+  // Friendly match form ও যদি text input হয় তাহলে datalist দিয়ে suggest করো
+  if (fHomeEl && fHomeEl.tagName === 'INPUT') {
+    const dl1 = document.getElementById('playerDatalist1') || (() => {
+      const dl = document.createElement('datalist');
+      dl.id = 'playerDatalist1';
+      document.body.appendChild(dl);
+      return dl;
+    })();
+    const dl2 = document.getElementById('playerDatalist2') || (() => {
+      const dl = document.createElement('datalist');
+      dl.id = 'playerDatalist2';
+      document.body.appendChild(dl);
+      return dl;
+    })();
+    dl1.innerHTML = players.map(p => `<option value="${p.name}">`).join('');
+    dl2.innerHTML = dl1.innerHTML;
+    fHomeEl.setAttribute('list', 'playerDatalist1');
+    fAwayEl.setAttribute('list', 'playerDatalist2');
+  }
+}
 
 window.switchAdminTab = function(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
