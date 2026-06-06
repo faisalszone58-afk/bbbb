@@ -1107,7 +1107,7 @@ select.form-input option { background: var(--card); }
 <div class="page" id="page-ranking">
   <div class="section">
     <div class="section-title">🏆 Player Rankings</div>
-    <div class="section-sub">// GOOGLE SHEETS থেকে auto-sync হয়</div>
+    <div class="section-sub">// Firebase থেকে real-time data</div>
 
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
       <input type="text" class="form-input" id="rankSearch" placeholder="🔍 Search player..." oninput="filterRanking()" style="flex:1;min-width:200px">
@@ -1202,15 +1202,11 @@ select.form-input option { background: var(--card); }
           <div class="match-add-grid">
             <div class="form-group">
               <label class="form-label">Home Player</label>
-              <select class="form-input" id="mHomePlayer">
-                <option value="">— Player select করুন —</option>
-              </select>
+              <input type="text" class="form-input" id="mHomePlayer" placeholder="Home player name">
             </div>
             <div class="form-group">
               <label class="form-label">Away Player</label>
-              <select class="form-input" id="mAwayPlayer">
-                <option value="">— Player select করুন —</option>
-              </select>
+              <input type="text" class="form-input" id="mAwayPlayer" placeholder="Away player name">
             </div>
             <div class="form-group">
               <label class="form-label">Home Score</label>
@@ -1473,10 +1469,7 @@ const firebaseConfig = {
 };
 
 // ════════════════════════════════════════
-// 📊 GOOGLE SHEETS CSV URL
-// ════════════════════════════════════════
-const RANKING_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSjVdRTKGKIYjcaTJbYUoDxD5aFuzZR43k76G8UruQ2aX-MgOdx9S-sD_t9sm_eGwZ5LNzYI3cbt5PL/pub?gid=0&single=true&output=csv';
-const MATCHES_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR2uXZvR5R8xUScW7_OaVYb8YOH3I3dGjok7yjjOdsh7wZY89aVDj11rXUD9rclQNuwuX6rmc-BjJq0/pub?gid=0&single=true&output=csv';
+// 📊 DATA SOURCE: Firebase Realtime Database
 
 // INIT
 const app = initializeApp(firebaseConfig);
@@ -1630,19 +1623,7 @@ window.resetPassword = async function() {
 };
 
 // ── LOAD PROFILE ──
-window.loadProfileData = async function() {
-  if (!currentUser) return;
-
-  // Firebase থেকে সবসময় fresh data আনো
-  try {
-    const snap = await get(child(ref(db), `users/${currentUser.uid}`));
-    if (snap.exists()) {
-      currentUserData = snap.val();
-    }
-  } catch(e) {
-    console.error('Profile load error:', e);
-  }
-
+window.loadProfileData = function() {
   if (!currentUserData) return;
   const d = currentUserData;
 
@@ -1682,9 +1663,6 @@ window.loadProfileData = async function() {
     document.getElementById('detWR').textContent = wp + '%';
     document.getElementById('detAvgG').textContent = (gf/m).toFixed(2);
     document.getElementById('detCSR').textContent = ((cs/m)*100).toFixed(1) + '%';
-  } else {
-    document.getElementById('noStatsMsg').classList.remove('hidden');
-    document.getElementById('statsDetail').classList.add('hidden');
   }
 
   // Achievements
@@ -1696,9 +1674,6 @@ window.loadProfileData = async function() {
   document.getElementById('editDistrict').value = d.district || '';
   const ea = document.getElementById('editAvatarPreview');
   if (d.avatarUrl) ea.innerHTML = `<img src="${d.avatarUrl}">`;
-
-  // Nav avatar update
-  updateNavUser();
 };
 
 // ── ACHIEVEMENTS ──
@@ -1751,26 +1726,26 @@ window.saveProfile = async function() {
 window.loadRanking = async function() {
   const container = document.getElementById('rankingTable');
   container.innerHTML = '<div class="text-center" style="padding:40px"><span class="spinner"></span><p style="color:var(--text3);margin-top:12px">Loading...</p></div>';
-
-  if (RANKING_SHEET_URL === 'YOUR_RANKING_SHEET_CSV_URL') {
-    container.innerHTML = `<div class="card text-center" style="padding:40px">
-      <div style="font-size:48px;margin-bottom:12px">📊</div>
-      <p style="color:var(--text3)">Code-এ RANKING_SHEET_URL set করুন।</p>
-      <p style="color:var(--text3);font-size:12px;margin-top:8px">Google Sheet → File → Share → Publish to web → CSV</p>
-    </div>`;
-    return;
-  }
-
   try {
-    const res = await fetch(RANKING_SHEET_URL + '&t=' + Date.now());
-    const text = await res.text();
-    rankingData = parseCSV(text);
+    const snap = await get(ref(db, 'users'));
+    if (!snap.exists()) {
+      container.innerHTML = '<div class="card text-center" style="padding:40px;color:var(--text3)">কোনো player নেই।</div>';
+      return;
+    }
+    rankingData = [];
+    snap.forEach(c => rankingData.push({ uid: c.key, ...c.val() }));
+    // Points দিয়ে sort, তারপর wins, তারপর goals
+    rankingData.sort((a, b) => {
+      const pa = (a.wins||0)*3 + (a.draws||0);
+      const pb = (b.wins||0)*3 + (b.draws||0);
+      if (pb !== pa) return pb - pa;
+      if ((b.wins||0) !== (a.wins||0)) return (b.wins||0) - (a.wins||0);
+      return ((b.goalsFor||0)-(b.goalsAgainst||0)) - ((a.goalsFor||0)-(a.goalsAgainst||0));
+    });
     renderRanking(rankingData);
-
-    // Update home stats
     document.getElementById('statPlayers').textContent = rankingData.length;
   } catch(e) {
-    container.innerHTML = `<div class="card text-center" style="padding:40px;color:var(--red)">❌ Data load হয়নি। Sheet URL check করুন।</div>`;
+    container.innerHTML = `<div class="card text-center" style="padding:40px;color:var(--red)">❌ Data load হয়নি।</div>`;
   }
 };
 
@@ -1781,21 +1756,32 @@ function renderRanking(data) {
     const rank = i + 1;
     const medal = medals[i] || '';
     const bg = rank <= 3 ? `background:linear-gradient(90deg,rgba(245,166,35,${0.08-i*0.02}),transparent)` : '';
+    const pts = (p.wins||0)*3 + (p.draws||0);
+    const m = p.matches || 0;
+    const wp = m > 0 ? ((p.wins||0)/m*100).toFixed(1) : '0.0';
+    const gd = (p.goalsFor||0) - (p.goalsAgainst||0);
+    const avatar = p.avatarUrl
+      ? `<img src="${p.avatarUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--border);vertical-align:middle;margin-right:8px">`
+      : `<span style="display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);align-items:center;justify-content:center;font-size:14px;margin-right:8px;vertical-align:middle">🎮</span>`;
     return `<tr style="${bg}">
       <td style="padding:12px 16px;font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:${rank<=3?'var(--gold)':'var(--text3)'};">${medal} ${rank}</td>
       <td style="padding:12px 16px;">
-        <div style="font-weight:600">${p.name||'—'}</div>
-        <div style="font-size:12px;color:var(--text3)">${p.club||'—'}</div>
+        <div style="display:flex;align-items:center">${avatar}
+          <div>
+            <div style="font-weight:600">${p.name||'—'}</div>
+            <div style="font-size:11px;color:var(--text3)">${p.club||'—'} • ${p.district||'—'}</div>
+          </div>
+        </div>
       </td>
-      <td style="padding:12px 16px;text-align:center">${p.matches||0}</td>
+      <td style="padding:12px 16px;text-align:center">${m}</td>
       <td style="padding:12px 16px;text-align:center;color:var(--green)">${p.wins||0}</td>
       <td style="padding:12px 16px;text-align:center">${p.draws||0}</td>
       <td style="padding:12px 16px;text-align:center;color:var(--red)">${p.losses||0}</td>
-      <td style="padding:12px 16px;text-align:center">${p.goals_for||0}</td>
-      <td style="padding:12px 16px;text-align:center">${p.goals_against||0}</td>
-      <td style="padding:12px 16px;text-align:center">${p.clean_sheets||0}</td>
-      <td style="padding:12px 16px;text-align:center;color:var(--cyan)">${p.win_pct||'—'}%</td>
-      <td style="padding:12px 16px;text-align:center;font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--gold)">${p.points||((p.wins||0)*3+(p.draws||0))}</td>
+      <td style="padding:12px 16px;text-align:center">${p.goalsFor||0}</td>
+      <td style="padding:12px 16px;text-align:center">${p.goalsAgainst||0}</td>
+      <td style="padding:12px 16px;text-align:center;color:${gd>=0?'var(--green)':'var(--red)'}">${gd>0?'+':''}${gd}</td>
+      <td style="padding:12px 16px;text-align:center;color:var(--cyan)">${wp}%</td>
+      <td style="padding:12px 16px;text-align:center;font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--gold)">${pts}</td>
     </tr>`;
   }).join('');
 
@@ -1807,14 +1793,14 @@ function renderRanking(data) {
             <th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace;letter-spacing:1px">#</th>
             <th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace;letter-spacing:1px">PLAYER</th>
             <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">M</th>
-            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">W</th>
-            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">D</th>
-            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">L</th>
+            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--green);font-family:'Share Tech Mono',monospace">W</th>
+            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--yellow);font-family:'Share Tech Mono',monospace">D</th>
+            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--red);font-family:'Share Tech Mono',monospace">L</th>
             <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">GF</th>
             <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">GA</th>
-            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">CS</th>
-            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">WIN%</th>
-            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">PTS</th>
+            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--text3);font-family:'Share Tech Mono',monospace">GD</th>
+            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--cyan);font-family:'Share Tech Mono',monospace">WIN%</th>
+            <th style="padding:12px 16px;text-align:center;font-size:11px;color:var(--gold);font-family:'Share Tech Mono',monospace">PTS</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -1831,17 +1817,20 @@ window.filterRanking = function() {
 // ── MATCHES ──
 window.loadMatches = async function() {
   const container = document.getElementById('matchesList');
-  if (MATCHES_SHEET_URL === 'YOUR_MATCHES_SHEET_CSV_URL') {
-    container.innerHTML = `<div class="card text-center" style="padding:40px"><div style="font-size:48px;margin-bottom:12px">⚽</div><p style="color:var(--text3)">Code-এ MATCHES_SHEET_URL set করুন।</p></div>`;
-    return;
-  }
   container.innerHTML = '<div class="text-center" style="padding:40px"><span class="spinner"></span></div>';
   try {
-    const res = await fetch(MATCHES_SHEET_URL + '&t=' + Date.now());
-    const text = await res.text();
-    matchesData = parseCSV(text);
+    const snap = await get(ref(db, 'matches'));
+    if (!snap.exists()) {
+      container.innerHTML = '<div class="card text-center" style="padding:40px;color:var(--text3)">কোনো match নেই।</div>';
+      return;
+    }
+    matchesData = [];
+    snap.forEach(c => matchesData.push({ id: c.key, ...c.val() }));
+    // Date দিয়ে sort — নতুন আগে
+    matchesData.sort((a, b) => (b.date||'').localeCompare(a.date||''));
     renderMatches(matchesData);
-    document.getElementById('statMatches').textContent = matchesData.filter(m=>m.status==='completed').length;
+    const completed = matchesData.filter(m => m.status === 'completed').length;
+    document.getElementById('statMatches').textContent = completed;
   } catch(e) {
     container.innerHTML = `<div class="card text-center" style="padding:40px;color:var(--red)">❌ Data load হয়নি।</div>`;
   }
@@ -1964,53 +1953,10 @@ window.adminLogin = function() {
     loadAllPlayers();
     loadAdminMatches();
     loadResultRequests();
-    populatePlayerDropdowns(); // Match form এ player dropdown populate করো
   } else {
     errEl.textContent = '❌ Password ভুল!'; errEl.classList.add('show');
   }
 };
-
-// ── Match Form Player Dropdowns ──
-async function populatePlayerDropdowns() {
-  const snap = await get(ref(db, 'users'));
-  if (!snap.exists()) return;
-  const players = [];
-  snap.forEach(c => players.push({ uid: c.key, ...c.val() }));
-  players.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-  const opts = players.map(p =>
-    `<option value="${p.name}">${p.name} (@${p.username || '—'}) — ${p.club || '—'}</option>`
-  ).join('');
-
-  const homeEl = document.getElementById('mHomePlayer');
-  const awayEl = document.getElementById('mAwayPlayer');
-  const fHomeEl = document.getElementById('fHomePlayer');
-  const fAwayEl = document.getElementById('fAwayPlayer');
-
-  const baseOpt = '<option value="">— Player select করুন —</option>';
-  if (homeEl) homeEl.innerHTML = baseOpt + opts;
-  if (awayEl) awayEl.innerHTML = baseOpt + opts;
-
-  // Friendly match form ও যদি text input হয় তাহলে datalist দিয়ে suggest করো
-  if (fHomeEl && fHomeEl.tagName === 'INPUT') {
-    const dl1 = document.getElementById('playerDatalist1') || (() => {
-      const dl = document.createElement('datalist');
-      dl.id = 'playerDatalist1';
-      document.body.appendChild(dl);
-      return dl;
-    })();
-    const dl2 = document.getElementById('playerDatalist2') || (() => {
-      const dl = document.createElement('datalist');
-      dl.id = 'playerDatalist2';
-      document.body.appendChild(dl);
-      return dl;
-    })();
-    dl1.innerHTML = players.map(p => `<option value="${p.name}">`).join('');
-    dl2.innerHTML = dl1.innerHTML;
-    fHomeEl.setAttribute('list', 'playerDatalist1');
-    fAwayEl.setAttribute('list', 'playerDatalist2');
-  }
-}
 
 window.switchAdminTab = function(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
