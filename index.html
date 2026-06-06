@@ -1767,7 +1767,7 @@ window.login = async function() {
 
   try {
     await setPersistence(auth, browserLocalPersistence).catch(()=>{});
-  await signInWithEmailAndPassword(auth, email, pass);
+    await signInWithEmailAndPassword(auth, email, pass);
     const snap = await get(child(ref(db), `users/${auth.currentUser.uid}`));
     if (snap.exists()) { currentUserData = snap.val(); updateNavUser(); }
     showPage('profile'); loadProfileData();
