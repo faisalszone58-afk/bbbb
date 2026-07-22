@@ -1,2883 +1,785 @@
-<!DOCTYPE html>
-<html lang="bn">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ভূমি ক্যালকুলেটর — Land Area Calculator</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600&family=Noto+Serif+Bengali:wght@500;600;700&display=swap" rel="stylesheet">
+<title>TYP Championship Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Titan+One&amp;family=Bellefair&amp;display=swap" rel="stylesheet">
+
+<!-- Firebase (compat SDK, single-file friendly) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
 <style>
-  :root{
-    --paper:#faf7ef;
-    --panel:#fffdf8;
-    --grid-line:#ece5d4;
-    --grid-line-strong:#e0d7c0;
-    --ink:#241f18;
-    --ink-soft:#5f5647;
-    --ink-faint:#948a78;
-    --blue:#1d5a78;
-    --blue-deep:#0e3a4f;
-    --blue-tint:#e8eef0;
-    --red:#a4392c;
-    --red-tint:#f7e9e3;
-    --gold:#a9832f;
-    --gold-tint:#f6efd9;
-    --border:#e1d8c3;
-    --radius:8px;
-    --shadow:0 1px 2px rgba(36,31,24,0.05), 0 8px 22px rgba(36,31,24,0.06);
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --accent: #76ABAE;
+    --teal: #76ABAE;
+    --teal-light: rgba(118,171,174,0.12);
+    --teal-border: rgba(118,171,174,0.40);
+    --surface: #FFFFFF;
+    --surface-2: #F5F5F5;
+    --surface-3: #ECEFEF;
+    --text-1: #2E4A4D;
+    --text-2: #5F7A7C;
+    --text-3: #9BB0B1;
+    --border: #DDE6E6;
+    --red: #C1584A;
+    --red-bg: rgba(193,88,74,0.06);
+    --red-border: rgba(193,88,74,0.22);
+    --green: #4C8C6E;
+    --green-bg: rgba(76,140,110,0.08);
+    --green-border: rgba(76,140,110,0.25);
+    --shadow-sm: 0 1px 3px rgba(46,74,77,0.07), 0 1px 2px rgba(46,74,77,0.05);
+    --shadow-md: 0 4px 18px rgba(46,74,77,0.10), 0 2px 6px rgba(46,74,77,0.05);
   }
 
-  *{box-sizing:border-box;}
-  html{-webkit-text-size-adjust:100%;}
-  body{
-    margin:0;
-    background:var(--paper);
-    background-image:
-      linear-gradient(var(--grid-line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-    background-size:26px 26px;
-    color:var(--ink);
-    font-family:'Inter',sans-serif;
-    line-height:1.5;
-    -webkit-font-smoothing:antialiased;
+  body {
+    background-color: var(--surface-2);
+    background-image: radial-gradient(circle, rgba(118,171,174,0.16) 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: var(--text-1);
+    font-family: 'Bellefair', serif;
+    min-height: 100vh;
   }
 
-  ::selection{background:var(--gold-tint); color:var(--ink);}
-
-  .bn{font-family:'Noto Sans Bengali','Inter',sans-serif;}
-  .mono{font-family:'Space Mono',monospace;}
-
-  .wrap{
-    max-width:1080px;
-    margin:0 auto;
-    padding:28px 20px 60px;
+  .page-wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 5rem;
   }
 
-  /* header */
-  header{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:16px;
-    padding-bottom:18px;
-    border-bottom:2px solid var(--ink);
-    margin-bottom:30px;
-    flex-wrap:wrap;
-    position:relative;
-  }
-  header::after{
-    content:'';
-    position:absolute;
-    left:0; right:0; bottom:-4px;
-    height:1px;
-    background:var(--gold);
-    opacity:0.55;
-  }
-  .brand{display:flex; flex-direction:column; gap:4px;}
-  .brand .bn-title{
-    font-family:'Noto Serif Bengali',serif;
-    font-weight:700;
-    font-size:23px;
-    color:var(--blue-deep);
-    letter-spacing:0.1px;
-  }
-  .brand .sub-title{
-    font-family:'Space Mono',monospace;
-    font-size:12px;
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-    color:var(--ink-faint);
-  }
-  .scale-badge{
-    font-family:'Space Mono',monospace;
-    font-size:11px;
-    color:var(--blue);
-    border:1px solid var(--blue);
-    border-radius:20px;
-    padding:5px 12px;
-    letter-spacing:0.5px;
-    white-space:nowrap;
+  /* ── Top bar ── */
+  .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: -2rem -1.5rem 1.5rem;
+    padding: 0.9rem 1.5rem;
+    background: rgba(245,245,245,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
   }
 
-  /* layout grid */
-  .layout{
-    display:grid;
-    grid-template-columns:340px 1fr;
-    gap:20px;
-    align-items:start;
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Bellefair', serif;
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-2);
   }
-  @media (max-width:820px){
-    .layout{grid-template-columns:1fr;}
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); }
+  .status-pill.viewing .dot { background: var(--teal); }
+  .status-pill.admin .dot { background: var(--green); }
+  .status-pill.admin { color: var(--green); border-color: var(--green-border); background: var(--green-bg); }
+
+  .admin-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-2);
+    font-family: 'Bellefair', serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .admin-btn:hover { border-color: var(--teal-border); color: var(--teal); background: var(--teal-light); }
+  .admin-btn.logout:hover { border-color: var(--red-border); color: var(--red); background: var(--red-bg); }
+
+  /* ── Header ── */
+  .header-bar { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 0.25rem; }
+  .trophy-icon { font-size: 1.9rem; line-height: 1; }
+  h1.tournament-name {
+    font-family: 'Titan One', sans-serif;
+    font-size: clamp(2.4rem, 7vw, 4.2rem);
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .subtitle-bar {
+    font-family: 'Bellefair', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    color: var(--text-3);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding-left: 0.1rem;
   }
 
-  /* panel base */
-  .panel{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-top:2px solid var(--blue-deep);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
+  /* ── Quick-jump chips ── */
+  .jump-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (max-width: 640px) { .jump-row { grid-template-columns: repeat(3, 1fr); } }
+  .jump-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 0.5rem 0.4rem;
+    cursor: pointer;
+    font-family: 'Bellefair', serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-2);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s;
+    text-decoration: none;
+    display: block;
+  }
+  .jump-chip:hover { border-color: var(--teal-border); color: var(--teal); }
+
+  /* ── Manager section (repeats x6) ── */
+  .manager-section {
+    margin-bottom: 3rem;
+    padding-top: 1rem;
+    scroll-margin-top: 5.5rem;
+  }
+  .manager-section + .manager-section {
+    border-top: 1px dashed var(--border);
+    padding-top: 3rem;
   }
 
-  /* shape tabs */
-  .tabs{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:8px;
-    padding:16px;
-    border-bottom:1px solid var(--border);
-  }
-  .tab-btn{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:6px;
-    padding:10px 4px 8px;
-    border:1px solid var(--border);
-    background:var(--paper);
-    border-radius:8px;
-    cursor:pointer;
-    color:var(--ink-soft);
-    transition:border-color .15s ease, color .15s ease, background .15s ease;
-    font-family:'Inter',sans-serif;
-    font-size:11.5px;
-    font-weight:500;
-  }
-  .tab-btn svg{width:26px; height:26px; stroke:var(--ink-faint); fill:none; stroke-width:1.6; transition:stroke .15s ease;}
-  .tab-btn:hover{border-color:var(--blue); color:var(--blue-deep);}
-  .tab-btn:hover svg{stroke:var(--blue);}
-  .tab-btn.active{
-    background:var(--blue-tint);
-    border-color:var(--blue);
-    color:var(--blue-deep);
-  }
-  .tab-btn.active svg{stroke:var(--blue);}
-  .tab-btn:focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
-
-  /* controls */
-  .controls{padding:18px 16px 20px;}
-
-  .unit-toggle{
-    display:flex;
-    border:1px solid var(--border);
-    border-radius:8px;
-    overflow:hidden;
-    margin-bottom:18px;
-  }
-  .unit-toggle button{
-    flex:1;
-    padding:9px 0;
-    background:var(--paper);
-    border:none;
-    cursor:pointer;
-    font-family:'Space Mono',monospace;
-    font-size:12.5px;
-    color:var(--ink-soft);
-    letter-spacing:0.5px;
-    transition:background .15s ease,color .15s ease;
-  }
-  .unit-toggle button.active{
-    background:var(--blue);
-    color:#fff;
-  }
-  .unit-toggle button:not(:last-child){border-right:1px solid var(--border);}
-  .unit-toggle button:focus-visible{outline:2px solid var(--blue); outline-offset:-2px;}
-
-  .mini-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px;}
-  .mini-grid .field{margin-bottom:0;}
-  .field{margin-bottom:14px;}
-  .field label{
-    display:block;
-    font-size:12.5px;
-    color:var(--ink-soft);
-    margin-bottom:5px;
-  }
-  .field label .bn{color:var(--ink-faint); font-size:11.5px;}
-  .field input{
-    width:100%;
-    padding:10px 12px;
-    border:1px solid var(--border);
-    border-radius:7px;
-    font-family:'Space Mono',monospace;
-    font-size:14px;
-    color:var(--ink);
-    background:var(--panel);
-    transition:border-color .15s ease, box-shadow .15s ease;
-  }
-  .field input:focus-visible{
-    outline:none;
-    border-color:var(--blue);
-    box-shadow:0 0 0 3px var(--blue-tint);
+  .manager-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Bellefair', serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal);
+    background: var(--teal-light);
+    border: 1px solid var(--teal-border);
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
+    margin-bottom: 0.9rem;
   }
 
-  .calc-btn{
-    width:100%;
-    padding:12px;
-    margin-top:6px;
-    border:none;
-    border-radius:7px;
-    background:var(--blue-deep);
-    color:#fff;
-    font-family:'Inter',sans-serif;
-    font-weight:600;
-    font-size:14px;
-    letter-spacing:0.3px;
-    cursor:pointer;
-    box-shadow:0 1px 0 rgba(0,0,0,0.12);
-    transition:background .15s ease, transform .08s ease, box-shadow .08s ease;
+  .manager-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding: 0.9rem 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
   }
-  .calc-btn:hover{background:var(--blue);}
-  .calc-btn:active{transform:translateY(1px); box-shadow:inset 0 1px 3px rgba(0,0,0,0.25);}
-  .calc-btn:focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
+  .manager-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+  .manager-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-1);
+    font-family: 'Bellefair', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    flex: 1;
+    caret-color: var(--teal);
+  }
+  .manager-input::placeholder { color: var(--text-3); font-weight: 400; }
 
-  /* rules box */
-  .rules-box{
-    margin:0 0 16px;
-    padding:12px 13px;
-    background:var(--blue-tint);
-    border:1px solid #d3e0e4;
-    border-radius:8px;
+  /* ── Metrics cards ── */
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; margin-bottom: 1.5rem; }
+  @media (max-width: 520px) { .metrics-grid { grid-template-columns: 1fr; } }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.3rem;
+    position: relative;
+    box-shadow: var(--shadow-sm);
   }
-  .rules-box .rules-title{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    font-family:'Space Mono',monospace;
-    font-size:10.5px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-    color:var(--blue-deep);
-    margin-bottom:6px;
+  .metric-card.total-card { border-color: var(--teal-border); }
+  .metric-card.remaining-card { border-color: var(--teal-border); }
+  .metric-card.remaining-card.danger { border-color: var(--red-border) !important; background: var(--red-bg); }
+  .metric-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
   }
-  .rules-box .rules-title svg{width:13px; height:13px; stroke:var(--blue-deep); fill:none; stroke-width:2;}
-  .rules-box .rules-bn{
-    font-family:'Noto Sans Bengali',sans-serif;
-    font-size:12.5px;
-    color:var(--ink);
-    line-height:1.55;
-    margin-bottom:4px;
+  .metric-label .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
+  .metric-card.danger .metric-label .dot { background: var(--red); }
+  .metric-value {
+    font-family: 'Titan One', sans-serif;
+    font-size: clamp(1.5rem, 4.5vw, 2rem);
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
   }
-  .rules-box .rules-formula{
-    font-family:'Space Mono',monospace;
-    font-size:11.5px;
-    color:var(--blue-deep);
-    background:rgba(255,255,255,0.55);
-    display:inline-block;
-    padding:3px 8px;
-    border-radius:5px;
-    margin-top:2px;
+  .metric-card.danger .metric-value { color: var(--red); }
+  .total-input-field {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'Titan One', sans-serif;
+    font-size: clamp(1.5rem, 4.5vw, 2rem);
+    font-weight: 600;
+    color: var(--accent);
+    width: 100%;
+    caret-color: var(--teal);
+    -moz-appearance: textfield;
   }
-  .rules-box .rules-warn{
-    font-family:'Noto Sans Bengali',sans-serif;
-    font-size:11.5px;
-    color:var(--red);
-    margin-top:6px;
-    display:flex;
-    gap:5px;
-    align-items:flex-start;
-    line-height:1.5;
+  .total-input-field::-webkit-outer-spin-button,
+  .total-input-field::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .metric-hint { font-size: 0.66rem; color: var(--text-3); margin-top: 0.35rem; font-family: 'Bellefair', serif; }
+  .danger-badge {
+    display: none;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red);
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-left: 0.4rem;
   }
+  .metric-card.danger .danger-badge { display: inline-block; }
 
-  .error-msg{
-    margin-top:12px;
-    padding:10px 12px;
-    background:var(--red-tint);
-    border:1px solid #ddc2b9;
-    border-radius:7px;
-    color:var(--red);
-    font-size:12.5px;
-    display:none;
+  /* ── Section header ── */
+  .section-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .section-title {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    white-space: nowrap;
   }
-  .error-msg.show{display:block;}
+  .section-line { flex: 1; height: 1px; background: var(--border); }
 
-  /* sketch panel */
-  .sketch-panel{
-    min-height:380px;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
+  /* ── Player table ── */
+  .players-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
   }
-  .sketch-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:12px 16px;
-    border-bottom:1px solid var(--border);
+  .table-head {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 1fr;
+    gap: 0;
+    padding: 0.65rem 1.1rem;
+    background: var(--surface-3);
+    border-bottom: 1px solid var(--border);
   }
-  .sketch-head .label{
-    font-family:'Space Mono',monospace;
-    font-size:11px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-    color:var(--ink-faint);
+  .table-head span { font-size: 0.63rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-3); }
+  .table-head span:last-child { text-align: right; }
+  .player-row {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 1fr;
+    gap: 0;
+    align-items: center;
+    padding: 0.55rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
   }
-  .sketch-head .shape-name{
-    font-weight:600;
-    font-size:14px;
-    color:var(--blue-deep);
+  .player-row:last-child { border-bottom: none; }
+  .player-row:hover { background: var(--surface-2); }
+  .player-num { font-family: 'Bellefair', serif; font-size: 0.75rem; color: var(--text-3); font-weight: 600; }
+  .player-name-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-1);
+    font-family: 'Bellefair', serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    width: 100%;
+    caret-color: var(--teal);
   }
-  .sketch-body{
-    flex:1;
-    background-image:
-      linear-gradient(var(--grid-line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
-      linear-gradient(var(--grid-line-strong) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px);
-    background-size:16px 16px, 16px 16px, 80px 80px, 80px 80px;
-    background-color:var(--panel);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:10px;
-    min-height:320px;
+  .player-name-input::placeholder { color: var(--text-3); font-weight: 400; font-size: 0.82rem; }
+  .coin-input-wrap { display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; }
+  .coin-symbol { font-size: 0.72rem; color: var(--text-3); }
+  .coin-input {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    outline: none;
+    color: var(--accent);
+    font-family: 'Bellefair', serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: right;
+    padding: 0.32rem 0.6rem;
+    width: 102px;
+    transition: border-color 0.15s, background 0.15s;
+    -moz-appearance: textfield;
+    caret-color: var(--teal);
   }
-  .sketch-body svg{width:100%; height:100%; max-height:360px;}
+  .coin-input::-webkit-outer-spin-button,
+  .coin-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .coin-input:focus { border-color: var(--teal-border); background: var(--surface); box-shadow: 0 0 0 3px var(--teal-light); }
+  .coin-input::placeholder { color: var(--text-3); font-weight: 400; }
 
-  /* results */
-  .results{
-    margin-top:20px;
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:12px;
-  }
-  @media (max-width:820px){
-    .results{grid-template-columns:repeat(2,1fr);}
-  }
-  .result-card{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:16px 14px;
-    text-align:center;
-    box-shadow:var(--shadow);
-  }
-  .result-card .value{
-    font-family:'Space Mono',monospace;
-    font-size:20px;
-    font-weight:700;
-    color:var(--blue-deep);
-    word-break:break-word;
-  }
-  .result-card .unit-en{
-    margin-top:4px;
-    font-size:11.5px;
-    color:var(--ink-soft);
-    letter-spacing:0.3px;
-  }
-  .result-card .unit-bn{
-    font-family:'Noto Sans Bengali',sans-serif;
-    font-size:12px;
-    color:var(--ink-faint);
-    margin-top:1px;
-  }
+  input:disabled { opacity: 0.85; cursor: default; }
+  input:disabled::placeholder { color: transparent; }
 
-  footer{
-    margin-top:30px;
-    text-align:center;
-    font-size:11.5px;
-    color:var(--ink-faint);
-    font-family:'Space Mono',monospace;
+  .total-coins-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1.1rem;
+    background: var(--surface-3);
+    border-top: 1px solid var(--teal-border);
   }
+  .total-coins-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-3); }
+  .total-coins-value { font-family: 'Bellefair', serif; font-size: 1rem; font-weight: 600; color: var(--accent); }
 
-  @media (prefers-reduced-motion:reduce){
-    *{transition:none !important;}
+  .actions-row { display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+  .action-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text-2);
+    font-family: 'Bellefair', serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    padding: 0.55rem 1.3rem;
+    cursor: pointer;
+    transition: border-color 0.18s, color 0.18s, background 0.18s, box-shadow 0.18s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: var(--shadow-sm);
   }
+  .reset-btn:hover { border-color: var(--red-border); color: var(--red); background: var(--red-bg); box-shadow: none; }
+  .action-btn:active { transform: scale(0.97); }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action-btn:disabled:hover { border-color: var(--border); color: var(--text-2); background: var(--surface); }
 
-  /* ---------- pages / nav ---------- */
-  .page{display:none;}
-  .page.active{display:block;}
-  .home-btn{
-    font-family:'Space Mono',monospace;
-    font-size:11.5px;
-    color:var(--blue-deep);
-    background:var(--paper);
-    border:1px solid var(--border);
-    border-radius:20px;
-    padding:6px 14px;
-    cursor:pointer;
-    letter-spacing:0.3px;
-    white-space:nowrap;
-  }
-  .home-btn:hover{border-color:var(--blue); background:var(--blue-tint);}
+  .global-actions { display: flex; justify-content: center; margin-top: 1rem; }
 
-  /* ---------- home menu ---------- */
-  .home-wrap{max-width:860px; padding-top:56px; position:relative;}
-  .home-hero{text-align:center; margin-bottom:44px; position:relative;}
-  .home-hero .eyebrow{
-    font-family:'Space Mono',monospace;
-    font-size:11px;
-    letter-spacing:2.5px;
-    text-transform:uppercase;
-    color:var(--gold);
-    margin-bottom:10px;
-  }
-  .home-hero .bn-title{
-    font-family:'Noto Serif Bengali',serif;
-    font-weight:700;
-    font-size:36px;
-    color:var(--blue-deep);
-    margin-bottom:8px;
-    letter-spacing:0.2px;
-  }
-  .home-hero .sub-title{
-    font-family:'Space Mono',monospace;
-    font-size:12px;
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-    color:var(--ink-faint);
-  }
-  .home-hero .tagline{
-    font-family:'Noto Sans Bengali',sans-serif;
-    font-size:13.5px;
-    color:var(--ink-soft);
-    max-width:480px;
-    margin:14px auto 0;
-    line-height:1.7;
-  }
-  .home-seal{
-    position:absolute;
-    top:-14px; right:6px;
-    width:84px; height:84px;
-    opacity:0.85;
-    transform:rotate(9deg);
-    pointer-events:none;
-  }
-  @media (max-width:640px){
-    .home-seal{display:none;}
-  }
-  .home-cards{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:18px;
-  }
-  @media (max-width:640px){
-    .home-cards{grid-template-columns:1fr;}
-    .home-wrap{padding-top:32px;}
-  }
-  .home-card{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    padding:26px 22px 24px;
-    text-align:left;
-    cursor:pointer;
-    position:relative;
-    overflow:hidden;
-    transition:border-color .15s ease, transform .12s ease, box-shadow .15s ease;
-  }
-  .home-card::before{
-    content:'';
-    position:absolute; top:0; left:0; right:0; height:3px;
-    background:var(--blue);
-    transform:scaleX(0);
-    transform-origin:left;
-    transition:transform .2s ease, background .2s ease;
-  }
-  .home-card:hover{border-color:var(--blue); transform:translateY(-3px); box-shadow:0 4px 6px rgba(36,31,24,0.06), 0 14px 28px rgba(36,31,24,0.09);}
-  .home-card:hover::before{transform:scaleX(1); background:linear-gradient(90deg, var(--blue), var(--gold));}
-  .home-card .icon-wrap{
-    width:44px; height:44px;
-    border-radius:8px;
-    background:var(--blue-tint);
-    border:1px solid #d3e0e4;
-    display:flex; align-items:center; justify-content:center;
-    margin-bottom:16px;
-  }
-  .home-card .icon-wrap svg{width:23px; height:23px; stroke:var(--blue-deep); fill:none; stroke-width:1.7;}
-  .home-card .card-title{
-    font-family:'Noto Serif Bengali',serif;
-    font-weight:600;
-    font-size:18px;
-    color:var(--ink);
-    margin-bottom:6px;
-  }
-  .home-card .card-sub{
-    font-family:'Space Mono',monospace;
-    font-size:11px;
-    letter-spacing:0.5px;
-    text-transform:uppercase;
-    color:var(--ink-faint);
-    margin-bottom:10px;
-  }
-  .home-card .card-desc{
-    font-family:'Noto Sans Bengali',sans-serif;
-    font-size:13px;
-    color:var(--ink-soft);
-    line-height:1.6;
+  .footer {
+    text-align: center;
+    margin-top: 2rem;
+    font-family: 'Bellefair', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    color: var(--text-3);
+    text-transform: uppercase;
   }
 
-  /* ---------- waris calculator ---------- */
-  .waris-layout{
-    display:grid;
-    grid-template-columns:360px 1fr;
-    gap:20px;
-    align-items:start;
-  }
-  @media (max-width:820px){
-    .waris-layout{grid-template-columns:1fr;}
-  }
-  .waris-section{padding:18px 16px; border-bottom:1px solid var(--border);}
-  .waris-section:last-child{border-bottom:none;}
-  .waris-section-title{
-    font-family:'Space Mono',monospace;
-    font-size:10.5px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-    color:var(--ink-faint);
-    margin-bottom:12px;
-    padding-left:9px;
-    border-left:2px solid var(--gold);
-  }
-  .gender-toggle{display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:6px;}
-  .gender-toggle button{
-    flex:1; padding:9px 0; background:var(--paper); border:none; cursor:pointer;
-    font-family:'Noto Sans Bengali',sans-serif; font-size:13px; color:var(--ink-soft);
-    transition:background .15s ease,color .15s ease;
-  }
-  .gender-toggle button.active{background:var(--blue); color:#fff;}
-  .gender-toggle button:not(:last-child){border-right:1px solid var(--border);}
-
-  .amount-row{display:flex; gap:8px; margin-bottom:4px;}
-  .amount-row input{flex:2; padding:10px 12px; border:1px solid var(--border); border-radius:7px; font-family:'Space Mono',monospace; font-size:14px;}
-  .amount-row select{flex:1; padding:10px 8px; border:1px solid var(--border); border-radius:7px; font-family:'Inter',sans-serif; font-size:12.5px; background:var(--panel);}
-
-  .heir-row{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:9px 0; border-bottom:1px dashed var(--border);
-    gap:10px;
-  }
-  .heir-row:last-child{border-bottom:none;}
-  .heir-row label{
-    display:flex; align-items:center; gap:8px;
-    font-family:'Noto Sans Bengali',sans-serif; font-size:13.5px; color:var(--ink);
-    flex:1;
-  }
-  .heir-row input[type=checkbox]{width:16px; height:16px; accent-color:var(--blue-deep); cursor:pointer;}
-  .heir-row .heir-count{
-    width:56px; padding:7px 8px; border:1px solid var(--border); border-radius:6px;
-    font-family:'Space Mono',monospace; font-size:13px; text-align:center;
-  }
-  .heir-note{
-    font-family:'Noto Sans Bengali',sans-serif; font-size:11px; color:var(--ink-faint);
-    margin-top:-4px; margin-bottom:6px;
-  }
-
-  .waris-results{margin-top:18px;}
-  .waris-result-row{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 16px; background:var(--panel); border:1px solid var(--border);
-    border-radius:9px; margin-bottom:10px; box-shadow:var(--shadow);
-    flex-wrap:wrap; gap:8px;
-  }
-  .waris-result-row .heir-label{
-    font-family:'Noto Sans Bengali',sans-serif; font-weight:600; font-size:14.5px; color:var(--blue-deep);
-    min-width:150px;
-  }
-  .waris-result-row .heir-label .count-tag{
-    font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-faint); font-weight:400; margin-left:6px;
-  }
-  .waris-result-row .heir-frac{
-    font-family:'Space Mono',monospace; font-size:12.5px; color:var(--ink-soft);
-    background:var(--blue-tint); padding:3px 9px; border-radius:20px;
-  }
-  .waris-result-row .heir-amount{
-    font-family:'Space Mono',monospace; font-weight:700; font-size:15px; color:var(--ink); text-align:right;
-  }
-  .waris-result-row .heir-perhead{
-    font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-faint); text-align:right; width:100%;
-  }
-  .waris-note-box{
-    margin-top:14px; padding:11px 13px; background:var(--gold-tint); border:1px solid #d9c48a;
-    border-radius:8px; font-family:'Noto Sans Bengali',sans-serif; font-size:12.5px; color:#7a5c14; line-height:1.6;
-  }
-  .waris-disclaimer{
-    margin-top:16px; padding:11px 13px; background:var(--red-tint); border:1px solid #ddc2b9;
-    border-radius:8px; font-family:'Noto Sans Bengali',sans-serif; font-size:11.5px; color:var(--red); line-height:1.6;
-  }
-
-  /* ---------- land reference book ---------- */
-  .book-layout{
-    display:grid;
-    grid-template-columns:230px 1fr;
-    gap:20px;
-    align-items:start;
-  }
-  @media (max-width:820px){
-    .book-layout{grid-template-columns:1fr;}
-  }
-  .book-toc{
-    position:sticky; top:20px;
-    padding:14px 10px;
-  }
-  .book-toc a{
-    display:block;
-    font-family:'Noto Sans Bengali',sans-serif;
-    font-size:12.5px;
-    color:var(--ink-soft);
-    text-decoration:none;
-    padding:8px 10px;
-    border-radius:7px;
-    margin-bottom:2px;
-  }
-  .book-toc a:hover{background:var(--blue-tint); color:var(--blue-deep);}
-
-  .book-content{padding:6px 6px 4px;}
-  .book-section{
-    padding:22px 24px;
-    border-bottom:1px solid var(--border);
-    scroll-margin-top:16px;
-  }
-  .book-section:last-child{border-bottom:none;}
-  .book-section h2{
-    font-family:'Noto Serif Bengali',serif;
-    font-weight:700;
-    font-size:18px;
-    color:var(--blue-deep);
-    margin:0 0 4px;
-  }
-  .book-section .h2-sub{
-    font-family:'Space Mono',monospace;
-    font-size:10.5px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-    color:var(--ink-faint);
-    margin-bottom:14px;
-  }
-  .book-section p, .book-section li{
-    font-family:'Noto Sans Bengali',sans-serif;
-    font-size:13px;
-    color:var(--ink);
-    line-height:1.75;
-  }
-  .book-section ul, .book-section ol{margin:0 0 10px; padding-left:20px;}
-  .book-section p{margin:0 0 10px;}
-  .book-table{width:100%; border-collapse:collapse; margin-bottom:14px; font-family:'Noto Sans Bengali',sans-serif; font-size:12.5px;}
-  .book-table th, .book-table td{border:1px solid var(--border); padding:8px 10px; text-align:left;}
-  .book-table th{background:var(--blue-tint); color:var(--blue-deep); font-weight:600;}
-  .book-table td.mono, .book-table th.mono{font-family:'Space Mono',monospace;}
-  .book-callout{
-    padding:12px 14px; background:var(--blue-tint); border:1px solid #d3e0e4; border-radius:8px;
-    font-family:'Noto Sans Bengali',sans-serif; font-size:12.5px; color:var(--ink); line-height:1.65; margin-bottom:12px;
-  }
-  .book-warn{
-    padding:12px 14px; background:var(--gold-tint); border:1px solid #d9c48a; border-radius:8px;
-    font-family:'Noto Sans Bengali',sans-serif; font-size:12.5px; color:#7a5c14; line-height:1.65; margin-bottom:12px;
-  }
-  .book-portal-tag{
-    display:inline-block; font-family:'Space Mono',monospace; font-size:11.5px; color:var(--blue-deep);
-    background:var(--blue-tint); padding:2px 8px; border-radius:5px; margin:0 2px;
-  }
+  /* ── Login modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,24,0.45); display: none; align-items: center; justify-content: center; z-index: 50; padding: 1.5rem; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--surface); border-radius: 14px; padding: 1.75rem; width: 100%; max-width: 340px; box-shadow: var(--shadow-md); }
+  .modal-title { font-family: 'Titan One', sans-serif; font-size: 1.4rem; letter-spacing: 0.02em; color: var(--accent); margin-bottom: 1rem; }
+  .modal-input { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; font-family: 'Bellefair', serif; font-size: 0.9rem; color: var(--text-1); margin-bottom: 0.7rem; outline: none; }
+  .modal-input:focus { border-color: var(--teal-border); box-shadow: 0 0 0 3px var(--teal-light); }
+  .modal-error { font-size: 0.76rem; color: var(--red); margin-bottom: 0.6rem; min-height: 1em; }
+  .modal-actions { display: flex; gap: 0.6rem; margin-top: 0.4rem; }
+  .modal-actions .action-btn { flex: 1; justify-content: center; }
 </style>
-</head>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}</style></head>
 <body>
+<div class="page-wrap">
 
-<!-- ================= HOME PAGE ================= -->
-<div class="page active" id="page-home">
-  <div class="wrap home-wrap">
-    <div class="home-hero">
-      <svg class="home-seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <path id="sealRing" d="M 50,50 m -38,0 a 38,38 0 1,1 76,0 a 38,38 0 1,1 -76,0"/>
-        </defs>
-        <circle cx="50" cy="50" r="46" fill="none" stroke="var(--red)" stroke-width="1.4"/>
-        <circle cx="50" cy="50" r="30" fill="none" stroke="var(--red)" stroke-width="1"/>
-        <text font-family="'Noto Sans Bengali',sans-serif" font-size="6.6" fill="var(--red)" letter-spacing="1.2">
-          <textPath href="#sealRing" startOffset="1%">সম্পত্তি ক্যালকুলেটর ✦ যাচাইকৃত হিসাব ✦</textPath>
-        </text>
-        <g stroke="var(--red)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M37 50 L46 59 L65 39"/>
-        </g>
-      </svg>
-      <div class="eyebrow">দলিল · খতিয়ান · রেজিস্ট্রেশন</div>
-      <div class="bn-title">সম্পত্তি ক্যালকুলেটর</div>
-      <div class="sub-title">Property Calculator Suite</div>
-      <p class="tagline bn">জমির মাপজোখ, ওয়ারিশ বণ্টন, রেজিস্ট্রেশন খরচ ও দলিল-সংক্রান্ত সব হিসাব — একই জায়গায়, বাংলায়।</p>
-    </div>
-    <div class="home-cards">
-      <div class="home-card" onclick="showPage('shape')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><path d="M6 6 L20 6 L25 21 L1 21 Z"/></svg></div>
-        <div class="card-title bn">জমির আকৃতি ক্যালকুলেটর</div>
-        <div class="card-sub">Land Shape · Area Calculator</div>
-        <div class="card-desc">১৪ রকম আকৃতির জমির মাপ দিয়ে ক্ষেত্রফল বের করুন — শতাংশ, কাঠা, বিঘা, একরে।</div>
-      </div>
-      <div class="home-card" onclick="showPage('waris')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><circle cx="9" cy="8" r="3.2"/><path d="M3 22 C3 16 6 14 9 14 C12 14 15 16 15 22"/><circle cx="20" cy="9" r="2.8"/><path d="M15.5 22 C15.5 17 18 15 20 15 C22 15 24.5 17 24.5 22"/></svg></div>
-        <div class="card-title bn">ওয়ারিশ সম্পত্তি ক্যালকুলেটর</div>
-        <div class="card-sub">Islamic Inheritance · Faraid</div>
-        <div class="card-desc">মোট সম্পত্তি ও জীবিত ওয়ারিশ নির্বাচন করলে ইসলামি ফরায়েজ বিধি অনুযায়ী ভাগ বের হয়ে যাবে।</div>
-      </div>
-      <div class="home-card" onclick="showPage('book')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><path d="M4 5 C4 3.5 5.5 3 7 3 L14 3 L14 24 L7 24 C5.5 24 4 23.5 4 22 Z"/><path d="M24 5 C24 3.5 22.5 3 21 3 L14 3 L14 24 L21 24 C22.5 24 24 23.5 24 22 Z"/><line x1="14" y1="3" x2="14" y2="24"/></svg></div>
-        <div class="card-title bn">জমি বিষয়ক তথ্যকোষ</div>
-        <div class="card-sub">Land Law · Reference Book</div>
-        <div class="card-desc">একক রূপান্তর, ক্ষেত্রফলের সূত্র, দলিল-নামজারি-খাজনার নিয়ম ও জরুরি ওয়েবসাইট — সব একসাথে।</div>
-      </div>
-      <div class="home-card" onclick="showPage('regcost')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><rect x="4" y="4" width="20" height="20" rx="2"/><path d="M9 12 L19 12 M9 16 L15 16"/><circle cx="19" cy="18" r="3"/></svg></div>
-        <div class="card-title bn">রেজিস্ট্রেশন খরচ ক্যালকুলেটর</div>
-        <div class="card-sub">Registration Cost Calculator</div>
-        <div class="card-desc">দলিলের মূল্য ও এলাকা দিলে স্ট্যাম্প শুল্ক, রেজিস্ট্রেশন ফি ও স্থানীয় সরকার কর মিলিয়ে মোট আনুমানিক খরচ বের করুন।</div>
-      </div>
-      <div class="home-card" onclick="showPage('unitconv')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><path d="M4 9 L20 9 M20 9 L16 5 M20 9 L16 13"/><path d="M24 19 L8 19 M8 19 L12 15 M8 19 L12 23"/></svg></div>
-        <div class="card-title bn">একক রূপান্তর কনভার্টার</div>
-        <div class="card-sub">Unit Converter</div>
-        <div class="card-desc">শতাংশ, কাঠা, বিঘা, একর, বর্গফুট, বর্গমিটার — যেকোনো একক থেকে বাকি সবগুলোতে সাথে সাথে রূপান্তর করুন।</div>
-      </div>
-      <div class="home-card" onclick="showPage('flatarea')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><rect x="4" y="4" width="20" height="20"/><rect x="9" y="9" width="10" height="10" stroke-dasharray="2 2"/></svg></div>
-        <div class="card-title bn">ফ্ল্যাট এরিয়া ক্যালকুলেটর</div>
-        <div class="card-sub">Super Built-up vs Carpet Area</div>
-        <div class="card-desc">ফ্ল্যাটের সুপার বিল্ট-আপ ও কার্পেট এরিয়ার মধ্যে রূপান্তর করুন এবং প্রকৃত প্রতি-বর্গফুট দাম বের করুন।</div>
-      </div>
-      <div class="home-card" onclick="showPage('emi')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="10"/><path d="M14 8 L14 14 L18 17"/></svg></div>
-        <div class="card-title bn">লোন/EMI ক্যালকুলেটর</div>
-        <div class="card-sub">Loan · Monthly Installment</div>
-        <div class="card-desc">জমি বা ফ্ল্যাট কেনার ঋণের পরিমাণ, সুদের হার ও মেয়াদ দিয়ে মাসিক কিস্তি বের করুন।</div>
-      </div>
-      <div class="home-card" onclick="showPage('mouzarate')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><path d="M14 3 L24 8 L24 20 L14 25 L4 20 L4 8 Z"/><path d="M14 3 L14 25 M4 8 L24 20 M24 8 L4 20"/></svg></div>
-        <div class="card-title bn">মৌজা রেট যাচাই</div>
-        <div class="card-sub">Mouza Rate Verification</div>
-        <div class="card-desc">জানা মৌজা রেট ও জমির পরিমাণ দিয়ে ন্যূনতম দলিল মূল্য বের করুন এবং আপনার দলিল মূল্য যথেষ্ট কিনা যাচাই করুন।</div>
-      </div>
-      <div class="home-card" onclick="showPage('ldtax')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><rect x="5" y="10" width="18" height="14" rx="1"/><path d="M9 10 L9 6 C9 4.5 10.5 3 14 3 C17.5 3 19 4.5 19 6 L19 10"/><line x1="14" y1="15" x2="14" y2="19"/></svg></div>
-        <div class="card-title bn">খাজনা বকেয়া ক্যালকুলেটর</div>
-        <div class="card-sub">Land Tax (Khajna) Arrears</div>
-        <div class="card-desc">কত বছরের ভূমি উন্নয়ন কর বকেয়া আছে, জমির ধরন ও হার দিয়ে মূল কর ও সুদসহ মোট বকেয়া বের করুন।</div>
-      </div>
-      <div class="home-card" onclick="showPage('sharedag')">
-        <div class="icon-wrap"><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="10"/><path d="M14 4 L14 14 L21 18"/></svg></div>
-        <div class="card-title bn">খতিয়ান/দাগ অংশ ক্যালকুলেটর</div>
-        <div class="card-sub">Khatian Share Calculator</div>
-        <div class="card-desc">মোট জমির পরিমাণ ও আনা-গন্ডা-কড়া-ক্রান্তি বা দশমিক অংশ দিয়ে আপনার প্রকৃত জমির পরিমাণ বের করুন।</div>
-      </div>
+  <div class="top-bar">
+    <span class="status-pill viewing" id="statusPill"><span class="dot"></span><span id="statusText">View Only</span></span>
+    <button class="admin-btn" id="adminBtn" onclick="openLoginModal()">Admin Login</button>
+  </div>
+
+  <div class="header-bar">
+    <span class="trophy-icon">🏆</span>
+    <h1 class="tournament-name">TYP Championship</h1>
+  </div>
+  <div class="subtitle-bar">Football Bid Tournament &nbsp;·&nbsp; Manager Dashboard &nbsp;·&nbsp; Coin Distribution Tracker</div>
+
+  <!-- Quick jump chips -->
+  <div class="jump-row" id="jumpRow"></div>
+
+  <!-- All 6 managers stacked, scroll to see all -->
+  <div id="managersContainer"></div>
+
+  <div class="global-actions">
+    <button class="action-btn" onclick="downloadHTML()">⬇ &nbsp;Download Snapshot</button>
+  </div>
+
+  <div class="footer">Synced live via Firebase &nbsp;·&nbsp; Everyone sees updates instantly</div>
+</div>
+
+<div class="modal-overlay" id="loginModal">
+  <div class="modal-box">
+    <div class="modal-title">Admin PIN</div>
+    <input type="password" id="loginPin" class="modal-input" placeholder="Enter PIN" autocomplete="off" inputmode="numeric" maxlength="12">
+    <div class="modal-error" id="loginError"></div>
+    <div class="modal-actions">
+      <button class="action-btn" onclick="closeLoginModal()">Cancel</button>
+      <button class="action-btn" style="border-color:var(--teal-border);color:var(--teal);" onclick="doLogin()">Unlock</button>
     </div>
   </div>
 </div>
-
-<!-- ================= SHAPE CALCULATOR PAGE ================= -->
-<div class="page" id="page-shape">
-<div class="wrap">
-
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">ভূমি ক্যালকুলেটর</div>
-      <div class="sub-title">Land Shape · Area Calculator</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="layout">
-
-    <!-- LEFT: controls -->
-    <div class="panel">
-      <div class="tabs" id="tabs"></div>
-      <div class="controls">
-        <div class="unit-toggle">
-          <button data-unit="ft" class="active">FEET</button>
-          <button data-unit="m">METER</button>
-        </div>
-        <div class="rules-box" id="rulesBox"></div>
-        <div id="fields"></div>
-        <button class="calc-btn" id="calcBtn">Calculate Area</button>
-        <div class="error-msg" id="errorMsg"></div>
-      </div>
-    </div>
-
-    <!-- RIGHT: live sketch -->
-    <div class="panel sketch-panel">
-      <div class="sketch-head">
-        <span class="shape-name" id="shapeName">Rectangle</span>
-        <span class="label">Scale drawing</span>
-      </div>
-      <div class="sketch-body" id="sketchBody"></div>
-    </div>
-
-  </div>
-
-  <!-- results -->
-  <div class="results" id="results">
-    <div class="result-card"><div class="value" id="r-sqft">—</div><div class="unit-en">Sq. Ft.</div><div class="unit-bn bn">বর্গফুট</div></div>
-    <div class="result-card"><div class="value" id="r-decimal">—</div><div class="unit-en">Decimal</div><div class="unit-bn bn">শতাংশ</div></div>
-    <div class="result-card"><div class="value" id="r-katha">—</div><div class="unit-en">Katha</div><div class="unit-bn bn">কাঠা</div></div>
-    <div class="result-card"><div class="value" id="r-bigha">—</div><div class="unit-en">Bigha</div><div class="unit-bn bn">বিঘা</div></div>
-    <div class="result-card"><div class="value" id="r-acre">—</div><div class="unit-en">Acre</div><div class="unit-bn bn">একর</div></div>
-  </div>
-
-  <footer>1 শতাংশ = 435.6 sqft &nbsp;·&nbsp; 1 কাঠা = 720 sqft &nbsp;·&nbsp; 1 বিঘা = 14,400 sqft &nbsp;·&nbsp; 1 একর = 43,560 sqft</footer>
-
-</div>
-</div>
-<!-- ================= /SHAPE CALCULATOR PAGE ================= -->
-
-<!-- ================= WARIS (INHERITANCE) CALCULATOR PAGE ================= -->
-<div class="page" id="page-waris">
-<div class="wrap">
-
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">ওয়ারিশ সম্পত্তি ক্যালকুলেটর</div>
-      <div class="sub-title">Islamic Inheritance · Faraid Calculator</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="waris-layout">
-
-    <!-- LEFT: inputs -->
-    <div class="panel">
-
-      <div class="waris-section">
-        <div class="waris-section-title">মৃত ব্যক্তি (deceased)</div>
-        <div class="gender-toggle">
-          <button data-gender="male" class="active" id="genderMaleBtn">পুরুষ (Male)</button>
-          <button data-gender="female" id="genderFemaleBtn">মহিলা (Female)</button>
-        </div>
-      </div>
-
-      <div class="waris-section">
-        <div class="waris-section-title">মোট সম্পত্তির পরিমাণ</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="warisAmount" placeholder="যেমন: 1200000">
-          <select id="warisUnit">
-            <option value="টাকা">টাকা</option>
-            <option value="শতাংশ">শতাংশ</option>
-            <option value="কাঠা">কাঠা</option>
-            <option value="বিঘা">বিঘা</option>
-            <option value="একর">একর</option>
-            <option value="বর্গফুট">বর্গফুট</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="waris-section">
-        <div class="waris-section-title">জীবিত ওয়ারিশ নির্বাচন করুন</div>
-
-        <div class="heir-row" id="rowHusband">
-          <label><input type="checkbox" id="hasHusband"> স্বামী (Husband)</label>
-        </div>
-        <div class="heir-row" id="rowWife">
-          <label>স্ত্রী সংখ্যা (Wives)</label>
-          <input type="number" min="0" max="4" step="1" class="heir-count" id="wivesCount" value="0">
-        </div>
-
-        <div class="heir-row">
-          <label><input type="checkbox" id="hasFather"> বাবা (Father)</label>
-        </div>
-        <div class="heir-row">
-          <label><input type="checkbox" id="hasGrandfather"> দাদা (Paternal Grandfather)</label>
-        </div>
-        <div class="heir-note">বাবা জীবিত থাকলে দাদা ওয়ারিশ হবেন না।</div>
-
-        <div class="heir-row">
-          <label><input type="checkbox" id="hasMother"> মা (Mother)</label>
-        </div>
-        <div class="heir-row">
-          <label><input type="checkbox" id="hasGrandmother"> দাদি/নানি (Grandmother)</label>
-        </div>
-        <div class="heir-note">মা জীবিত থাকলে দাদি/নানি ওয়ারিশ হবেন না।</div>
-
-        <div class="heir-row">
-          <label>ছেলে সংখ্যা (Sons)</label>
-          <input type="number" min="0" step="1" class="heir-count" id="sonsCount" value="0">
-        </div>
-        <div class="heir-row">
-          <label>মেয়ে সংখ্যা (Daughters)</label>
-          <input type="number" min="0" step="1" class="heir-count" id="daughtersCount" value="0">
-        </div>
-        <div class="heir-row">
-          <label>সহোদর ভাই সংখ্যা (Full Brothers)</label>
-          <input type="number" min="0" step="1" class="heir-count" id="brothersCount" value="0">
-        </div>
-        <div class="heir-row">
-          <label>সহোদর বোন সংখ্যা (Full Sisters)</label>
-          <input type="number" min="0" step="1" class="heir-count" id="sistersCount" value="0">
-        </div>
-        <div class="heir-note">বাবা/দাদা অথবা ছেলে জীবিত থাকলে ভাই-বোন ওয়ারিশ হবেন না।</div>
-
-      </div>
-
-      <div class="waris-section">
-        <button class="calc-btn" id="warisCalcBtn">ভাগ হিসাব করুন — Calculate Shares</button>
-        <div class="error-msg" id="warisErrorMsg"></div>
-      </div>
-
-    </div>
-
-    <!-- RIGHT: results -->
-    <div class="panel" style="padding:18px 16px;">
-      <div class="waris-section-title" style="margin-bottom:14px;">ফলাফল — Distribution</div>
-      <div class="waris-results" id="warisResults">
-        <div class="heir-note" style="font-size:13px;">বাম পাশে সম্পত্তির পরিমাণ ও ওয়ারিশ নির্বাচন করে হিসাব করুন।</div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="waris-disclaimer">
-    এই ক্যালকুলেটরটি প্রচলিত (হানাফি মাযহাব অনুসারী) ফরায়েজ বিধির সাধারণ ও সবচেয়ে বেশি প্রচলিত ওয়ারিশদের জন্য সরলীকৃত হিসাব দেয় — ঋণ ও অসিয়ত বাদ দেওয়ার পর অবশিষ্ট সম্পত্তির ভিত্তিতে। বৈমাত্রেয়/বৈপিত্রেয় ভাই-বোন, একাধিক প্রজন্মের নাতি-নাতনি বা অন্যান্য জটিল/ব্যতিক্রমী পারিবারিক পরিস্থিতির ক্ষেত্রে সঠিক হিসাবের জন্য অবশ্যই একজন আলেম বা আইনজ্ঞের পরামর্শ নিন।
-  </div>
-
-</div>
-</div>
-<!-- ================= /WARIS CALCULATOR PAGE ================= -->
-
-<!-- ================= LAND REFERENCE BOOK PAGE ================= -->
-<div class="page" id="page-book">
-<div class="wrap">
-
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">জমি বিষয়ক তথ্যকোষ</div>
-      <div class="sub-title">Land Law &amp; Reference Handbook</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="book-layout">
-
-    <!-- TOC -->
-    <div class="panel book-toc">
-      <a href="#sec-units">১. একক ও রূপান্তর</a>
-      <a href="#sec-formulas">২. ক্ষেত্রফলের সূত্র</a>
-      <a href="#sec-terms">৩. জরুরি শব্দ ও দলিল</a>
-      <a href="#sec-buy">৪. জমি কেনার আগে</a>
-      <a href="#sec-namjari">৫. নামজারি (মিউটেশন)</a>
-      <a href="#sec-registration">৬. রেজিস্ট্রেশন খরচ</a>
-      <a href="#sec-tax">৭. ভূমি উন্নয়ন কর</a>
-      <a href="#sec-waris">৮. ওয়ারিশ/উত্তরাধিকার</a>
-      <a href="#sec-classification">৯. জমির শ্রেণীবিভাগ</a>
-      <a href="#sec-jointown">১০. যৌথ মালিকানা ও বন্টননামা</a>
-      <a href="#sec-preemption">১১. অগ্রক্রয়াধিকার</a>
-      <a href="#sec-fraud">১২. জাল দলিল থেকে সতর্কতা</a>
-      <a href="#sec-dispute">১৩. জমি বিরোধ ও প্রতিকার</a>
-      <a href="#sec-khas">১৪. খাস জমি বন্দোবস্ত</a>
-      <a href="#sec-holdingtax">১৫. হোল্ডিং/পৌর কর</a>
-      <a href="#sec-gift">১৬. দানপত্র/হেবা/উইল</a>
-      <a href="#sec-flatreg">১৭. ফ্ল্যাট রেজিস্ট্রেশনের নিয়ম</a>
-      <a href="#sec-nrb">১৮. প্রবাসী ও পাওয়ার অফ অ্যাটর্নি</a>
-      <a href="#sec-portals">১৯. জরুরি ওয়েবসাইট</a>
-      <a href="#sec-faq">২০. প্রায়ই জিজ্ঞাসিত প্রশ্ন</a>
-    </div>
-
-    <!-- content -->
-    <div class="panel book-content">
-
-      <section class="book-section" id="sec-units">
-        <h2 class="bn">১. জমির একক ও রূপান্তর</h2>
-        <div class="h2-sub">Land Units &amp; Conversion</div>
-        <table class="book-table bn">
-          <tr><th>একক</th><th class="mono">বর্গফুটে</th><th>অন্যান্য এককে (আনুমানিক)</th></tr>
-          <tr><td>১ শতাংশ (Decimal)</td><td class="mono">৪৩৫.৬ sqft</td><td>০.৬০৫ কাঠা · ০.০৩০৩ বিঘা · ০.০১ একর</td></tr>
-          <tr><td>১ কাঠা (Katha)</td><td class="mono">৭২০ sqft</td><td>১.৬৫৩ শতাংশ · ০.০৫ বিঘা · ০.০১৬৫ একর</td></tr>
-          <tr><td>১ বিঘা (Bigha)</td><td class="mono">১৪,৪০০ sqft</td><td>৩৩.০৬ শতাংশ · ২০ কাঠা · ০.৩৩ একর</td></tr>
-          <tr><td>১ একর (Acre)</td><td class="mono">৪৩,৫৬০ sqft</td><td>১০০ শতাংশ · ৬০.৫ কাঠা · ৩.০২৫ বিঘা</td></tr>
-        </table>
-        <div class="book-callout bn">কাঠা ও বিঘার প্রকৃত মাপ অঞ্চলভেদে (বিশেষ করে জেলাভেদে প্রচলিত রীতিতে) সামান্য ভিন্ন হতে পারে — উপরের মানগুলো বাংলাদেশে সবচেয়ে বেশি প্রচলিত মান।</div>
-      </section>
-
-      <section class="book-section" id="sec-formulas">
-        <h2 class="bn">২. আকৃতিভেদে ক্ষেত্রফলের সূত্র</h2>
-        <div class="h2-sub">Area Formulas by Shape</div>
-        <table class="book-table bn">
-          <tr><th>আকৃতি</th><th>সূত্র</th></tr>
-          <tr><td>আয়তক্ষেত্র</td><td class="mono">দৈর্ঘ্য × প্রস্থ</td></tr>
-          <tr><td>বর্গক্ষেত্র</td><td class="mono">বাহু²</td></tr>
-          <tr><td>ত্রিভুজ / স্থূলকোণী ত্রিভুজ</td><td class="mono">√(s(s−a)(s−b)(s−c)), s=(a+b+c)/২</td></tr>
-          <tr><td>সমকোণী ত্রিভুজ</td><td class="mono">০.৫ × ভূমি × উচ্চতা</td></tr>
-          <tr><td>বৃত্ত</td><td class="mono">π × ব্যাসার্ধ²</td></tr>
-          <tr><td>অর্ধবৃত্ত</td><td class="mono">০.৫ × π × ব্যাসার্ধ²</td></tr>
-          <tr><td>ট্রাপিজিয়াম</td><td class="mono">((a+b)/২) × উচ্চতা</td></tr>
-          <tr><td>সামান্তরিক/রম্বস</td><td class="mono">ভূমি × লম্ব উচ্চতা</td></tr>
-          <tr><td>উপবৃত্ত</td><td class="mono">π × (a/২) × (b/২)</td></tr>
-          <tr><td>এল-আকৃতি</td><td class="mono">(L×W) − (কাটা L × কাটা W)</td></tr>
-          <tr><td>অনিয়মিত/বহুভুজ</td><td class="mono">একাধিক ত্রিভুজে ভেঙে হেরনের সূত্র যোগ</td></tr>
-        </table>
-        <div class="book-callout bn">সরাসরি ইনপুট দিয়ে হিসাব করতে <a href="#" onclick="showPage('shape'); return false;" style="color:var(--blue-deep);">জমির আকৃতি ক্যালকুলেটর</a> ব্যবহার করুন — প্রতিটা শেপের নিয়মসহ লাইভ স্কেচ দেখাবে।</div>
-      </section>
-
-      <section class="book-section" id="sec-terms">
-        <h2 class="bn">৩. জরুরি শব্দ ও দলিলের ধরন</h2>
-        <div class="h2-sub">Key Terms &amp; Document Types</div>
-        <ul class="bn">
-          <li><b>মৌজা</b> — জরিপের সময় নির্ধারিত সবচেয়ে ছোট ভৌগোলিক এলাকা, প্রতিটি মৌজার আলাদা মানচিত্র ও খতিয়ান থাকে।</li>
-          <li><b>দাগ নম্বর</b> — মৌজা মানচিত্রে প্রতিটি জমির খণ্ডের নিজস্ব শনাক্তকরণ নম্বর।</li>
-          <li><b>খতিয়ান</b> — মালিকানার সরকারি নথি। ধরন অনুযায়ী: CS (সবচেয়ে পুরনো), SA, RS, BS/সিটি জরিপ (সাম্প্রতিক)।</li>
-          <li><b>পর্চা</b> — খতিয়ানের অনুলিপি/প্রিন্ট কপি, যা দিয়ে মালিকানা যাচাই করা হয়।</li>
-          <li><b>দলিল</b> — জমি হস্তান্তরের আইনি প্রমাণপত্র — সাফ কবলা (কেনা-বেচা), দানপত্র/হেবা, বন্টননামা, উইল ইত্যাদি বিভিন্ন ধরনের হয়।</li>
-          <li><b>নামজারি/মিউটেশন/খারিজ</b> — জমি হস্তান্তরের পর খতিয়ানে নতুন মালিকের নাম তোলার প্রক্রিয়া।</li>
-          <li><b>ওয়ারিশ সনদ</b> — মৃত ব্যক্তির বৈধ ওয়ারিশ কারা তা প্রমাণ করার সনদ, স্থানীয় চেয়ারম্যান/কাউন্সিলর থেকে ইস্যু হয়।</li>
-        </ul>
-      </section>
-
-      <section class="book-section" id="sec-buy">
-        <h2 class="bn">৪. জমি কেনার আগে যা যাচাই করবেন</h2>
-        <div class="h2-sub">Before Buying Land — Checklist</div>
-        <ul class="bn">
-          <li>বিক্রেতার মূল দলিল ও পূর্ববর্তী মালিকানার ধারাবাহিকতা (মিউটেশন পর্যন্ত) যাচাই করুন।</li>
-          <li>সর্বশেষ খতিয়ান/পর্চায় দাগ নম্বর ও জমির পরিমাণ মূল দলিলের সাথে মিলিয়ে দেখুন।</li>
-          <li>ভূমি উন্নয়ন কর/খাজনা হালনাগাদ পরিশোধ করা আছে কিনা, কোনো বকেয়া বা মামলা আছে কিনা যাচাই করুন।</li>
-          <li>জমি কোনো ওয়ারিশ সম্পত্তি হলে সব ওয়ারিশের সম্মতি/স্বাক্ষর আছে কিনা নিশ্চিত হোন।</li>
-          <li>সম্ভব হলে স্থানীয় ভূমি অফিস বা আইনজীবীর মাধ্যমে দলিল ও খতিয়ান সরাসরি যাচাই করান।</li>
-        </ul>
-      </section>
-
-      <section class="book-section" id="sec-namjari">
-        <h2 class="bn">৫. নামজারি (মিউটেশন) প্রক্রিয়া</h2>
-        <div class="h2-sub">Mutation Process</div>
-        <p class="bn">জমি রেজিস্ট্রি সম্পন্ন হওয়ার পর খতিয়ানে নতুন মালিকের নাম তুলতে নামজারি করতে হয় — এটি না করলে জমির উপর আইনি অধিকার সম্পূর্ণ প্রতিষ্ঠিত হয় না। বর্তমানে পুরো প্রক্রিয়াটি অনলাইনে করা যায়:</p>
-        <ol class="bn">
-          <li><span class="book-portal-tag">mutation.land.gov.bd</span> -এ অ্যাকাউন্ট খুলে আবেদন করুন।</li>
-          <li>দলিল নম্বর, সাল ও প্রয়োজনীয় তথ্য দিয়ে ফর্ম পূরণ করুন।</li>
-          <li>দলিল, পর্চা, ওয়ারিশ সনদ (প্রযোজ্য হলে) ইত্যাদির স্ক্যান কপি আপলোড করুন।</li>
-          <li>নির্ধারিত কোর্ট ফি অনলাইনে পরিশোধ করুন।</li>
-          <li>ভূমি অফিসের শুনানি শেষে অনুমোদন হলে নতুন খতিয়ান তৈরি হয়ে যায়; আবেদনের অবস্থা ওয়েবসাইটে বা "নামজারি" মোবাইল অ্যাপে ট্র্যাক করা যায়।</li>
-        </ol>
-        <div class="book-warn bn">ফি ও সময়সীমা মাঝেমধ্যে সরকার হালনাগাদ করে — সর্বশেষ হার আবেদনের সময় ওয়েবসাইটেই দেখানো হয়।</div>
-      </section>
-
-      <section class="book-section" id="sec-registration">
-        <h2 class="bn">৬. দলিল রেজিস্ট্রেশনের খরচ</h2>
-        <div class="h2-sub">Registration Cost Components</div>
-        <p class="bn">জমির দলিলে উল্লেখিত মূল্যের ভিত্তিতে সাধারণত এই খরচগুলো দিতে হয়:</p>
-        <table class="book-table bn">
-          <tr><th>খরচের ধরন</th><th>আনুমানিক হার</th></tr>
-          <tr><td>স্ট্যাম্প ডিউটি</td><td class="mono">≈ ১.৫% (দলিল মূল্যের)</td></tr>
-          <tr><td>রেজিস্ট্রেশন ফি</td><td class="mono">≈ ১% (দলিল মূল্যের)</td></tr>
-          <tr><td>স্থানীয় সরকার কর, উৎসে আয়কর (AIT), ভ্যাট</td><td class="mono">এলাকা ও জমির প্রকৃতিভেদে পরিবর্তনশীল</td></tr>
-        </table>
-        <div class="book-warn bn">এই হারগুলো সরকার সময়ে সময়ে সংশোধন করে এবং এলাকা/জমির ধরনভেদে পরিবর্তিত হয় — চূড়ান্ত সিদ্ধান্তের আগে সাব-রেজিস্ট্রি অফিস বা নিবন্ধন অধিদপ্তরের হালনাগাদ তথ্য যাচাই করে নিন।</div>
-      </section>
-
-      <section class="book-section" id="sec-tax">
-        <h2 class="bn">৭. ভূমি উন্নয়ন কর (খাজনা)</h2>
-        <div class="h2-sub">Land Development Tax</div>
-        <p class="bn">প্রতি বছর জমির মালিককে ভূমি উন্নয়ন কর (স্থানীয়ভাবে "খাজনা" নামে পরিচিত) পরিশোধ করতে হয়। বর্তমানে এটি সম্পূর্ণ অনলাইনে দাখিলার মাধ্যমে পরিশোধ করতে হয় — ম্যানুয়ালি খাজনা পরিশোধের সুযোগ নেই।</p>
-        <ol class="bn">
-          <li><span class="book-portal-tag">ldtax.gov.bd</span> -এ NID, মোবাইল নম্বর দিয়ে নাগরিক নিবন্ধন করুন।</li>
-          <li>বিভাগ, জেলা, উপজেলা, মৌজা ও হোল্ডিং নম্বর দিয়ে নিজ জমি খুঁজে নিন।</li>
-          <li>বকেয়া কর দেখে বিকাশ/নগদ/কার্ডে অনলাইনে পরিশোধ করুন এবং সাথে সাথে দাখিলা রশিদ পাবেন।</li>
-        </ol>
-        <div class="book-callout bn">নির্দিষ্ট পরিমাণের কম কৃষি জমির জন্য কর মওকুফের বিধান আছে (শুধু নামমাত্র দাখিলা ফি দিতে হয়) — নিজের জমির ক্ষেত্রে প্রযোজ্য হার ওয়েবসাইটেই দেখা যাবে।</div>
-      </section>
-
-      <section class="book-section" id="sec-waris">
-        <h2 class="bn">৮. ওয়ারিশ/উত্তরাধিকার সম্পত্তি</h2>
-        <div class="h2-sub">Inheritance Property</div>
-        <p class="bn">মৃত ব্যক্তির সম্পত্তি ইসলামি ফরায়েজ বিধি অনুযায়ী নির্দিষ্ট নিয়মে ওয়ারিশদের মধ্যে ভাগ হয় — স্বামী/স্ত্রী, বাবা-মা, ছেলে-মেয়ে, ভাই-বোন প্রত্যেকের অংশ পরিস্থিতিভেদে (কে কে জীবিত আছেন তার উপর ভিত্তি করে) বদলে যায়। এই হিসাব নিজে করতে <a href="#" onclick="showPage('waris'); return false;" style="color:var(--blue-deep);">ওয়ারিশ সম্পত্তি ক্যালকুলেটর</a> ব্যবহার করুন।</p>
-        <div class="book-warn bn">জটিল পারিবারিক পরিস্থিতিতে (একাধিক প্রজন্মের ওয়ারিশ, বৈমাত্রেয়/বৈপিত্রেয় সম্পর্ক ইত্যাদি) সঠিক ভাগের জন্য অবশ্যই একজন আলেম বা আইনজ্ঞের পরামর্শ নিন।</div>
-      </section>
-
-      <section class="book-section" id="sec-classification">
-        <h2 class="bn">৯. জমির শ্রেণীবিভাগ</h2>
-        <div class="h2-sub">Land Classification</div>
-        <ul class="bn">
-          <li><b>কৃষি জমি</b> — ফসলি জমি, মাছ চাষের পুকুর/জলাধার, ফলের বাগান, পতিত কৃষি জমি ইত্যাদি। বসতভিটা কৃষি জমি হিসেবে গণ্য হয় না।</li>
-          <li><b>অকৃষি জমি</b> — বসতভিটা, বাণিজ্যিক ও শিল্প জমি। সিটি কর্পোরেশন বা পৌরসভার আওতাভুক্ত সব জমি (কৃষি হোক বা না হোক) আইনিভাবে অকৃষি হিসেবে গণ্য হয়।</li>
-          <li><b>খাস জমি</b> — সংবিধানের ১৪৩ অনুচ্ছেদ অনুযায়ী প্রকৃত মালিকবিহীন বা সরকারের নিয়ন্ত্রণাধীন জমি, যা সরকার নির্ধারিত নীতিমালা অনুযায়ী বন্দোবস্ত দিতে পারে (বিস্তারিত ১৪ নং অংশে)।</li>
-        </ul>
-        <div class="book-callout bn">জমির শ্রেণী অনুযায়ী নামজারি ফি, কর হার ও অগ্রক্রয়াধিকার প্রযোজ্য আইন ভিন্ন হয় — তাই কেনার আগে জমিটি কৃষি না অকৃষি তা নিশ্চিত হওয়া জরুরি।</div>
-      </section>
-
-      <section class="book-section" id="sec-jointown">
-        <h2 class="bn">১০. যৌথ মালিকানা ও বন্টননামা</h2>
-        <div class="h2-sub">Joint Ownership &amp; Partition Deed</div>
-        <p class="bn">একাধিক ব্যক্তি (যেমন ওয়ারিশরা) একসাথে একই খতিয়ানের মালিক হলে সেটাকে যৌথ/অংশীদারি মালিকানার জমি বলে। প্রত্যেকের নির্দিষ্ট অংশ (শতাংশ/কাঠা হিসেবে) ভাগ করে আলাদা করে নিতে সব অংশীদারের সম্মতিতে একটি <b>বন্টননামা দলিল</b> তৈরি করে রেজিস্ট্রি করাতে হয়।</p>
-        <ul class="bn">
-          <li>বন্টননামা ছাড়া মৌখিক ভাগাভাগি আইনগতভাবে দুর্বল — ভবিষ্যতে বিরোধ এড়াতে অবশ্যই রেজিস্ট্রি করা উচিত।</li>
-          <li>বন্টননামার পর প্রত্যেকের ভাগে আলাদা খতিয়ান/নামজারি করাতে হয়।</li>
-          <li>ওয়ারিশ সম্পত্তির ক্ষেত্রে ভাগের অনুপাত এই সাইটের <a href="#" onclick="showPage('waris'); return false;" style="color:var(--blue-deep);">ওয়ারিশ ক্যালকুলেটর</a> দিয়ে আগেই হিসাব করে নেওয়া যায়।</li>
-        </ul>
-      </section>
-
-      <section class="book-section" id="sec-preemption">
-        <h2 class="bn">১১. অগ্রক্রয়াধিকার (প্রি-এম্পশন)</h2>
-        <div class="h2-sub">Right of Pre-emption</div>
-        <p class="bn">কোনো সহ-শরিক (co-sharer) বা পাশের জমির মালিক যদি আপনাকে না জানিয়ে তার অংশ/জমি অন্য কারো কাছে বিক্রি করে দেন, তাহলে নির্দিষ্ট শর্তে আপনি আদালতের মাধ্যমে একই মূল্যে সেই জমি অগ্রাধিকার ভিত্তিতে কিনে নেওয়ার আবেদন করতে পারেন।</p>
-        <table class="book-table bn">
-          <tr><th>জমির ধরন</th><th>প্রযোজ্য আইন</th></tr>
-          <tr><td>কৃষি জমি</td><td class="mono">রাষ্ট্রীয় অধিগ্রহণ ও প্রজাস্বত্ব আইন, ১৯৫০ — ধারা ৯৬</td></tr>
-          <tr><td>অকৃষি জমি</td><td class="mono">অকৃষি প্রজাস্বত্ব আইন, ১৯৪৯ — ধারা ২৪</td></tr>
-        </table>
-        <div class="book-warn bn">এই অধিকার প্রয়োগের জন্য নির্দিষ্ট সময়সীমার মধ্যে আদালতে আবেদন (মিস কেস) করতে হয় — বিক্রির খবর জানার পর যত দ্রুত সম্ভব একজন আইনজীবীর পরামর্শ নেওয়া জরুরি, দেরি হলে অধিকার হারানোর ঝুঁকি থাকে।</div>
-      </section>
-
-      <section class="book-section" id="sec-fraud">
-        <h2 class="bn">১২. জাল দলিল ও প্রতারণা থেকে সতর্কতা</h2>
-        <div class="h2-sub">Avoiding Fraudulent Deeds</div>
-        <ul class="bn">
-          <li>মূল দলিলের ভলিউম নম্বর ও পৃষ্ঠা নম্বর সংশ্লিষ্ট সাব-রেজিস্ট্রি অফিসের রেকর্ডের সাথে মিলিয়ে দেখুন।</li>
-          <li><span class="book-portal-tag">dlrms.land.gov.bd</span> বা <span class="book-portal-tag">eporcha.gov.bd</span> দিয়ে খতিয়ান সরাসরি অনলাইনে যাচাই করুন — শুধু বিক্রেতার দেখানো কাগজে ভরসা করবেন না।</li>
-          <li>একই জমি একাধিকবার বিক্রি হয়েছে কিনা জানতে স্থানীয় সাব-রেজিস্ট্রি অফিস ও ভূমি অফিসে সরেজমিনে খোঁজ নিন।</li>
-          <li>বিক্রেতা প্রকৃত ওয়ারিশ কিনা তা ওয়ারিশ সনদ ও পূর্ববর্তী মালিকানার ধারাবাহিকতা মিলিয়ে যাচাই করুন।</li>
-          <li>বড় অঙ্কের লেনদেনের আগে একজন আইনজীবী দিয়ে দলিল ও খতিয়ান আনুষ্ঠানিকভাবে যাচাই করিয়ে নিন।</li>
-        </ul>
-      </section>
-
-      <section class="book-section" id="sec-dispute">
-        <h2 class="bn">১৩. জমি বিরোধ ও প্রতিকার</h2>
-        <div class="h2-sub">Land Disputes &amp; Remedies</div>
-        <table class="book-table bn">
-          <tr><th>বিরোধের ধরন</th><th>কোথায় যেতে হবে</th></tr>
-          <tr><td>ছোটখাটো মালিকানা/সীমানা বিরোধ</td><td>স্থানীয় সহকারী কমিশনার (ভূমি) / এসি ল্যান্ড অফিস</td></tr>
-          <tr><td>জরিপ/খতিয়ানে ভুল সংশোধন</td><td>ভূমি জরিপ ট্রাইব্যুনাল</td></tr>
-          <tr><td>মালিকানা/দখল সংক্রান্ত মামলা</td><td>দেওয়ানি আদালত (সিভিল কোর্ট)</td></tr>
-          <tr><td>জমি সংক্রান্ত প্রতারণা/অপরাধ</td><td>থানায় অভিযোগ — ভূমি অপরাধ প্রতিরোধ ও প্রতিকার আইন, ২০২৩ অনুযায়ী</td></tr>
-        </table>
-      </section>
-
-      <section class="book-section" id="sec-khas">
-        <h2 class="bn">১৪. খাস জমি বন্দোবস্ত</h2>
-        <div class="h2-sub">Khas (Government) Land Settlement</div>
-        <p class="bn">প্রকৃত মালিকবিহীন বা সরকারের নিয়ন্ত্রণাধীন জমিকে খাস জমি বলে। এই জমি সরকার নির্ধারিত নীতিমালা অনুযায়ী বন্দোবস্ত (বরাদ্দ) দিতে পারে।</p>
-        <ul class="bn">
-          <li><b>কৃষি খাস জমি</b> — কৃষি খাস জমি ব্যবস্থাপনা ও বন্দোবস্ত নীতিমালা, ১৯৯৭ অনুযায়ী ভূমিহীনদের মধ্যে বন্টন করা হয়; উপজেলা ভূমি অফিসে আবেদন করতে হয় এবং উপজেলা কৃষি খাস জমি ব্যবস্থাপনা কমিটি যাচাই করে।</li>
-          <li><b>অকৃষি খাস জমি</b> — অকৃষি খাস জমি বন্দোবস্ত নীতিমালা, ১৯৯৫ অনুযায়ী ধর্মীয় প্রতিষ্ঠান, এতিমখানা, কবরস্থান ইত্যাদির জন্য নির্দিষ্ট শর্তে বরাদ্দ দেওয়া যায়।</li>
-          <li>বন্দোবস্তকৃত খাস জমি সাধারণত বিক্রি বা হস্তান্তর করা যায় না, তবে উত্তরাধিকার সূত্রে নামজারি করা যায়।</li>
-        </ul>
-      </section>
-
-      <section class="book-section" id="sec-holdingtax">
-        <h2 class="bn">১৫. হোল্ডিং/পৌর কর</h2>
-        <div class="h2-sub">Holding Tax (City Corporation/Pourashava)</div>
-        <p class="bn">ভূমি উন্নয়ন কর (খাজনা) ও হোল্ডিং ট্যাক্স আলাদা জিনিস। ভূমি উন্নয়ন কর জমির উপর ভূমি মন্ত্রণালয়কে দিতে হয়, আর হোল্ডিং ট্যাক্স (গৃহকর) জমির উপর নির্মিত বাড়ি/স্থাপনার জন্য সিটি কর্পোরেশন বা পৌরসভাকে দিতে হয়।</p>
-        <ul class="bn">
-          <li>বাড়ি/স্থাপনার বার্ষিক ভাড়ামূল্য নির্ধারণ (Annual Rental Value) করে তার একটি শতাংশ হারে হোল্ডিং ট্যাক্স ধার্য হয়।</li>
-          <li>সাধারণত বছরে একবার বা দুই কিস্তিতে পরিশোধ করতে হয়, সংশ্লিষ্ট সিটি কর্পোরেশন/পৌরসভা কার্যালয়ে বা তাদের অনলাইন পোর্টালে।</li>
-          <li>হোল্ডিং ট্যাক্স বকেয়া থাকলে জমি/বাড়ি বিক্রি বা নামজারিতে সমস্যা হতে পারে — তাই কেনার আগে বকেয়া আছে কিনা যাচাই করা জরুরি।</li>
-        </ul>
-      </section>
-
-      <section class="book-section" id="sec-gift">
-        <h2 class="bn">১৬. দানপত্র/হেবা/উইল</h2>
-        <div class="h2-sub">Gift Deed, Hiba &amp; Will</div>
-        <ul class="bn">
-          <li><b>দানপত্র (Gift Deed)</b> — বিনামূল্যে সম্পত্তি হস্তান্তরের সাধারণ দলিল, রেজিস্ট্রি করা আবশ্যক।</li>
-          <li><b>হেবা</b> — ইসলামি আইন অনুযায়ী দান; বৈধ হতে হলে তিনটি শর্ত পূরণ করতে হয় — দাতার দানের ঘোষণা, গ্রহীতার গ্রহণ, এবং সম্পত্তির প্রকৃত দখল হস্তান্তর। শুধু ঘোষণা দিলেই হেবা সম্পূর্ণ হয় না, দখলও বুঝিয়ে দিতে হয়।</li>
-          <li><b>উইল/অসিয়ত</b> — মৃত্যুর পর সম্পত্তি বণ্টনের ইচ্ছাপত্র। ইসলামি উত্তরাধিকার আইনে, বৈধ ওয়ারিশ নন এমন কাউকে সর্বোচ্চ সম্পত্তির ১/৩ অংশ পর্যন্ত অসিয়ত করা যায় — এর বেশি করতে হলে বাকি সব ওয়ারিশের সম্মতি লাগে। বৈধ ওয়ারিশের অনুকূলে সরাসরি অসিয়ত ইসলামি আইনে গ্রহণযোগ্য নয় (অন্য ওয়ারিশদের সম্মতি ছাড়া)।</li>
-        </ul>
-        <div class="book-warn bn">দানপত্র/হেবা/উইল — এই তিনটিরই আইনি প্রভাব ও শর্ত আলাদা, তাই বড় সম্পত্তির ক্ষেত্রে দলিল তৈরির আগে একজন আইনজীবীর পরামর্শ নেওয়া ভালো।</div>
-      </section>
-
-      <section class="book-section" id="sec-flatreg">
-        <h2 class="bn">১৭. ফ্ল্যাট রেজিস্ট্রেশনের আলাদা নিয়ম</h2>
-        <div class="h2-sub">Flat/Apartment Registration</div>
-        <p class="bn">জমির মতো ফ্ল্যাট রেজিস্ট্রেশনেও দলিল ও নামজারি লাগে, তবে কিছু অতিরিক্ত বিষয় থাকে:</p>
-        <ul class="bn">
-          <li>ফ্ল্যাট কেনার সময় জমির একটি নির্দিষ্ট <b>আন্ডিভাইডেড শেয়ার</b> (অবিভক্ত অংশ) এবং ফ্ল্যাট/স্ট্রাকচারের মূল্য — দুই ভাগে দলিলে উল্লেখ থাকে।</li>
-          <li>রেজিস্ট্রেশন ফি ও কর সাধারণত জমি অংশ ও স্ট্রাকচার অংশ আলাদাভাবে হিসাব হতে পারে (এলাকা ও ডেভেলপারভেদে পার্থক্য হয়)।</li>
-          <li>নামজারির সময় ফ্ল্যাটের জমির আন্ডিভাইডেড শেয়ার অনুযায়ী মালিকানা তোলা হয়, পুরো ভবনের জমি নয়।</li>
-          <li>ডেভেলপারের সাথে বায়না/চুক্তির সময়েই সুপার বিল্ট-আপ বনাম কার্পেট এরিয়া স্পষ্টভাবে যাচাই করে নেওয়া উচিত (দেখুন ফ্ল্যাট এরিয়া ক্যালকুলেটর)।</li>
-        </ul>
-      </section>
-
-      <section class="book-section" id="sec-nrb">
-        <h2 class="bn">১৮. প্রবাসী ও পাওয়ার অফ অ্যাটর্নি</h2>
-        <div class="h2-sub">NRBs &amp; Power of Attorney</div>
-        <p class="bn">প্রবাসী বাংলাদেশিরা সাধারণত বৈধ পাসপোর্ট/এনআইডি দিয়ে দেশে জমি কিনতে বা মালিকানার হিসাব রাখতে পারেন। দেশে সরাসরি উপস্থিত থাকতে না পারলে <b>পাওয়ার অফ অ্যাটর্নি (আমমোক্তারনামা)</b> দিয়ে দেশে অবস্থানরত কাউকে প্রতিনিধি নিযুক্ত করা যায়।</p>
-        <ol class="bn">
-          <li>প্রথমে বাংলাদেশে একজন আইনজীবীর মাধ্যমে পাওয়ার অফ অ্যাটর্নির খসড়া দলিল তৈরি করান।</li>
-          <li>খসড়া দলিল, প্রতিনিধির ছবি ও এনআইডির কপি প্রবাসীর কাছে পাঠানো হয়।</li>
-          <li>প্রবাসী নিজের ছবি ও পরিচয়পত্র নিয়ে অবস্থানরত দেশের বাংলাদেশ দূতাবাস/হাইকমিশনে গিয়ে দলিলটি সত্যায়ন (attestation) করান।</li>
-          <li>সত্যায়িত দলিল দেশে ফেরত পাঠানো হলে প্রয়োজনীয় স্ট্যাম্প শুল্ক দিয়ে সাব-রেজিস্ট্রি অফিসে রেজিস্ট্রি করা হয়।</li>
-          <li>এরপর প্রতিনিধি সেই পাওয়ার অফ অ্যাটর্নির শর্ত অনুযায়ী জমি হস্তান্তর/রেজিস্ট্রেশন সম্পন্ন করতে পারেন।</li>
-        </ol>
-        <div class="book-warn bn">সাধারণ (revocable) পাওয়ার অফ অ্যাটর্নি দিয়ে বিক্রয়, বন্ধক বা বায়নার ক্ষমতা দেওয়া যায় না — এর জন্য নির্দিষ্ট ধরনের (যেমন অপ্রত্যাহারযোগ্য) পাওয়ার অফ অ্যাটর্নি প্রয়োজন হতে পারে, তাই খসড়া তৈরির সময়েই আইনজীবীকে উদ্দেশ্য স্পষ্ট করে জানান।</div>
-      </section>
-
-      <section class="book-section" id="sec-portals">
-        <h2 class="bn">১৯. জরুরি সরকারি ওয়েবসাইট</h2>
-        <div class="h2-sub">Official Land Portals</div>
-        <table class="book-table bn">
-          <tr><th>কাজ</th><th>ওয়েবসাইট</th></tr>
-          <tr><td>ভূমি মন্ত্রণালয়ের প্রধান পোর্টাল</td><td class="mono">land.gov.bd</td></tr>
-          <tr><td>নামজারি/মিউটেশন আবেদন</td><td class="mono">mutation.land.gov.bd</td></tr>
-          <tr><td>খতিয়ান/পর্চা যাচাই</td><td class="mono">dlrms.land.gov.bd · eporcha.gov.bd</td></tr>
-          <tr><td>ভূমি উন্নয়ন কর/খাজনা পরিশোধ</td><td class="mono">ldtax.gov.bd</td></tr>
-          <tr><td>দলিল রেজিস্ট্রেশন সংক্রান্ত</td><td class="mono">rd.gov.bd (নিবন্ধন অধিদপ্তর)</td></tr>
-        </table>
-        <div class="book-warn bn">এই তথ্যকোষটি সাধারণ ধারণা দেওয়ার জন্য — সরকারি নিয়ম, ফি ও পোর্টাল মাঝেমধ্যে পরিবর্তিত হয়, তাই যেকোনো আনুষ্ঠানিক কাজের আগে সংশ্লিষ্ট সরকারি ওয়েবসাইট বা ভূমি অফিসে সর্বশেষ তথ্য যাচাই করে নিন। এটি আইনি পরামর্শ নয়।</div>
-      </section>
-
-      <section class="book-section" id="sec-faq">
-        <h2 class="bn">২০. প্রায়ই জিজ্ঞাসিত প্রশ্ন</h2>
-        <div class="h2-sub">Frequently Asked Questions</div>
-        <p class="bn"><b>প্রশ্ন: জমির মালিকানা কীভাবে যাচাই করব?</b><br>উত্তর: দাগ নম্বর বা খতিয়ান নম্বর দিয়ে dlrms.land.gov.bd বা eporcha.gov.bd তে পর্চা বের করে দেখুন, এবং মূল দলিল সাব-রেজিস্ট্রি অফিসের ভলিউম-পৃষ্ঠার সাথে মিলিয়ে যাচাই করুন।</p>
-        <p class="bn"><b>প্রশ্ন: নামজারি না করলে কী সমস্যা হয়?</b><br>উত্তর: খতিয়ানে নাম না উঠলে জমির উপর সম্পূর্ণ আইনি অধিকার প্রতিষ্ঠিত হয় না — ভবিষ্যতে বিক্রি, ঋণ নেওয়া বা মামলায় সমস্যা হতে পারে।</p>
-        <p class="bn"><b>প্রশ্ন: ওয়ারিশ সম্পত্তি ভাগ করতে কী লাগে?</b><br>উত্তর: ওয়ারিশ সনদ ও সব ওয়ারিশের সম্মতিতে একটি বন্টননামা দলিল রেজিস্ট্রি করাতে হয়; কার ভাগে কতটুকু আসবে তা আগেই এই সাইটের ওয়ারিশ ক্যালকুলেটর দিয়ে হিসাব করে নেওয়া যায়।</p>
-        <p class="bn"><b>প্রশ্ন: জমির খাজনা কতদিন পরপর দিতে হয়?</b><br>উত্তর: প্রতি অর্থবছরে একবার, সম্পূর্ণ অনলাইনে ldtax.gov.bd -এর মাধ্যমে দাখিলা দিতে হয়।</p>
-        <p class="bn"><b>প্রশ্ন: সহ-শরিক না জানিয়ে জমি বিক্রি করে দিলে কী করা যায়?</b><br>উত্তর: অগ্রক্রয়াধিকার (প্রি-এম্পশন) অনুযায়ী নির্দিষ্ট সময়ের মধ্যে আদালতে আবেদন করে একই দামে সেই জমি কিনে নেওয়ার সুযোগ থাকতে পারে — দ্রুত একজন আইনজীবীর পরামর্শ নিন।</p>
-      </section>
-
-    </div>
-  </div>
-
-</div>
-</div>
-<!-- ================= /LAND REFERENCE BOOK PAGE ================= -->
-
-<!-- ================= REGISTRATION COST CALCULATOR PAGE ================= -->
-<div class="page" id="page-regcost">
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">রেজিস্ট্রেশন খরচ ক্যালকুলেটর</div>
-      <div class="sub-title">Registration Cost Calculator</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="waris-layout">
-    <div class="panel">
-      <div class="waris-section">
-        <div class="waris-section-title">দলিলে উল্লেখিত মূল্য</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="regValue" placeholder="যেমন: 2000000">
-          <select disabled style="opacity:.5;"><option>টাকা</option></select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">জমির এলাকা</div>
-        <div class="gender-toggle">
-          <button data-area="city" class="active" id="regCityBtn">সিটি কর্পোরেশন/ক্যান্টনমেন্ট</button>
-          <button data-area="other" id="regOtherBtn">পৌরসভা/ইউনিয়ন পরিষদ</button>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">জমির প্রকৃতি (উৎসে কর/AIT হিসাবের জন্য)</div>
-        <div class="gender-toggle">
-          <button data-nature="residential" class="active" id="regResidentialBtn">আবাসিক</button>
-          <button data-nature="commercial" id="regCommercialBtn">বাণিজ্যিক</button>
-          <button data-nature="agri" id="regAgriBtn">কৃষি</button>
-        </div>
-      </div>
-      <div class="waris-section">
-        <button class="calc-btn" id="regCalcBtn">হিসাব করুন — Calculate</button>
-        <div class="error-msg" id="regErrorMsg"></div>
-      </div>
-    </div>
-
-    <div class="panel" style="padding:18px 16px;">
-      <div class="waris-section-title" style="margin-bottom:14px;">আনুমানিক খরচ</div>
-      <div class="waris-results" id="regResults">
-        <div class="heir-note" style="font-size:13px;">বাম পাশে দলিলের মূল্য ও এলাকা দিয়ে হিসাব করুন।</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="waris-disclaimer">এটি একটি আনুমানিক হিসাব — স্ট্যাম্প শুল্ক (≈১.৫%), রেজিস্ট্রেশন ফি (≈১%), স্থানীয় সরকার কর (সিটি কর্পোরেশন/ক্যান্টনমেন্টে ≈২%, অন্যত্র ≈৩%) এবং উৎসে কর/AIT (এলাকা ও জমির প্রকৃতি অনুযায়ী আনুমানিক ০.৫%–৫%) ধরে গণনা করা। উৎসে করের প্রকৃত হার মৌজা, এলাকার শ্রেণিবিন্যাস (ক/খ/গ/ঘ) ও সরকার জারিকৃত হালনাগাদ গেজেট অনুযায়ী ভিন্ন হতে পারে। ভ্যাট এখানে যুক্ত করা হয়নি — জমির প্রকৃতি ও এলাকাভেদে তা অতিরিক্ত যুক্ত হতে পারে। সরকার সময়ে সময়ে হার সংশোধন করে — চূড়ান্ত অংকের জন্য সাব-রেজিস্ট্রি অফিসে যাচাই করুন।</div>
-</div>
-</div>
-<!-- ================= /REGISTRATION COST CALCULATOR PAGE ================= -->
-
-<!-- ================= UNIT CONVERTER PAGE ================= -->
-<div class="page" id="page-unitconv">
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">একক রূপান্তর কনভার্টার</div>
-      <div class="sub-title">Land Unit Converter</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="waris-layout">
-    <div class="panel">
-      <div class="waris-section">
-        <div class="waris-section-title">পরিমাণ ও একক</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="convValue" placeholder="যেমন: 5">
-          <select id="convUnit">
-            <option value="decimal">শতাংশ</option>
-            <option value="katha">কাঠা</option>
-            <option value="bigha">বিঘা</option>
-            <option value="acre">একর</option>
-            <option value="sqft">বর্গফুট</option>
-            <option value="sqm">বর্গমিটার</option>
-          </select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <button class="calc-btn" id="convCalcBtn">রূপান্তর করুন — Convert</button>
-        <div class="error-msg" id="convErrorMsg"></div>
-      </div>
-    </div>
-
-    <div class="panel" style="padding:18px 16px;">
-      <div class="waris-section-title" style="margin-bottom:14px;">সমমান</div>
-      <div class="waris-results" id="convResults">
-        <div class="heir-note" style="font-size:13px;">বাম পাশে একটা পরিমাণ ও একক দিয়ে রূপান্তর করুন।</div>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-<!-- ================= /UNIT CONVERTER PAGE ================= -->
-
-<!-- ================= FLAT AREA CALCULATOR PAGE ================= -->
-<div class="page" id="page-flatarea">
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">ফ্ল্যাট এরিয়া ক্যালকুলেটর</div>
-      <div class="sub-title">Super Built-up vs Carpet Area</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="waris-layout">
-    <div class="panel">
-      <div class="waris-section">
-        <div class="waris-section-title">রূপান্তরের দিক</div>
-        <div class="gender-toggle">
-          <button data-dir="s2c" class="active" id="flatS2CBtn">সুপার বিল্ট-আপ → কার্পেট</button>
-          <button data-dir="c2s" id="flatC2SBtn">কার্পেট → সুপার বিল্ট-আপ</button>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title" id="flatAreaLabel">সুপার বিল্ট-আপ এরিয়া (বর্গফুট)</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="flatArea" placeholder="যেমন: 1200">
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">লোডিং ফ্যাক্টর (কমন স্পেসের ভাগ)</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" max="90" id="flatLoading" value="30">
-          <select disabled style="opacity:.5;"><option>%</option></select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">মোট দাম (ঐচ্ছিক)</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="flatPrice" placeholder="যেমন: 6000000">
-          <select disabled style="opacity:.5;"><option>টাকা</option></select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <button class="calc-btn" id="flatCalcBtn">হিসাব করুন — Calculate</button>
-        <div class="error-msg" id="flatErrorMsg"></div>
-      </div>
-    </div>
-
-    <div class="panel" style="padding:18px 16px;">
-      <div class="waris-section-title" style="margin-bottom:14px;">ফলাফল</div>
-      <div class="waris-results" id="flatResults">
-        <div class="heir-note" style="font-size:13px;">বাম পাশে এরিয়া দিয়ে হিসাব করুন।</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="waris-disclaimer">লোডিং ফ্যাক্টর ডেভেলপার ও প্রকল্পভেদে ভিন্ন হয় (সাধারণত ২৫-৩৫%) — সম্ভব হলে বিক্রয় চুক্তিতে উল্লেখিত প্রকৃত লোডিং ফ্যাক্টর ব্যবহার করুন।</div>
-</div>
-</div>
-<!-- ================= /FLAT AREA CALCULATOR PAGE ================= -->
-
-<!-- ================= EMI CALCULATOR PAGE ================= -->
-<div class="page" id="page-emi">
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">লোন/EMI ক্যালকুলেটর</div>
-      <div class="sub-title">Loan · Monthly Installment</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="waris-layout">
-    <div class="panel">
-      <div class="waris-section">
-        <div class="waris-section-title">ঋণের পরিমাণ</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="emiPrincipal" placeholder="যেমন: 3000000">
-          <select disabled style="opacity:.5;"><option>টাকা</option></select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">বার্ষিক সুদের হার</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="emiRate" placeholder="যেমন: 9">
-          <select disabled style="opacity:.5;"><option>%</option></select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">মেয়াদ</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="emiYears" placeholder="যেমন: 15">
-          <select disabled style="opacity:.5;"><option>বছর</option></select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <button class="calc-btn" id="emiCalcBtn">হিসাব করুন — Calculate</button>
-        <div class="error-msg" id="emiErrorMsg"></div>
-      </div>
-    </div>
-
-    <div class="panel" style="padding:18px 16px;">
-      <div class="waris-section-title" style="margin-bottom:14px;">ফলাফল</div>
-      <div class="waris-results" id="emiResults">
-        <div class="heir-note" style="font-size:13px;">বাম পাশে ঋণের তথ্য দিয়ে হিসাব করুন।</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="waris-disclaimer">এটি একটি সাধারণ EMI (সমান মাসিক কিস্তি) হিসাব — ব্যাংকভেদে প্রসেসিং ফি, ইন্স্যুরেন্স বা ভিন্ন সুদ হিসাবের পদ্ধতি (ফ্ল্যাট/রিডিউসিং) থাকতে পারে, তাই প্রকৃত কিস্তি ব্যাংক থেকে নিশ্চিত করে নিন।</div>
-</div>
-</div>
-<!-- ================= /EMI CALCULATOR PAGE ================= -->
-
-<!-- ================= MOUZA RATE VERIFICATION PAGE ================= -->
-<div class="page" id="page-mouzarate">
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">মৌজা রেট যাচাই</div>
-      <div class="sub-title">Mouza Rate Verification</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="waris-layout">
-    <div class="panel">
-      <div class="waris-section">
-        <div class="waris-section-title">জমির পরিমাণ</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="mouzaArea" placeholder="যেমন: 5">
-          <select id="mouzaUnit">
-            <option value="decimal">শতাংশ</option>
-            <option value="katha">কাঠা</option>
-            <option value="bigha">বিঘা</option>
-            <option value="acre">একর</option>
-          </select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title" id="mouzaRateLabel">মৌজা রেট — প্রতি শতাংশ (টাকা)</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="mouzaRate" placeholder="যেমন: 500000">
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">দলিলে উল্লেখিত মোট মূল্য (ঐচ্ছিক)</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="mouzaDeedValue" placeholder="যেমন: 3000000">
-          <select disabled style="opacity:.5;"><option>টাকা</option></select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <button class="calc-btn" id="mouzaCalcBtn">হিসাব করুন — Calculate</button>
-        <div class="error-msg" id="mouzaErrorMsg"></div>
-      </div>
-    </div>
-
-    <div class="panel" style="padding:18px 16px;">
-      <div class="waris-section-title" style="margin-bottom:14px;">ফলাফল</div>
-      <div class="waris-results" id="mouzaResults">
-        <div class="heir-note" style="font-size:13px;">বাম পাশে জমির পরিমাণ ও মৌজা রেট দিয়ে হিসাব করুন। মৌজা রেট আপনাকে সংশ্লিষ্ট সাব-রেজিস্ট্রি অফিস বা dlrms.land.gov.bd থেকে যাচাই করে বসাতে হবে — এই ক্যালকুলেটর নিজে থেকে মৌজা রেট খুঁজে দেয় না।</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="waris-disclaimer">বাংলাদেশে প্রতিটি মৌজার জন্য সাব-রেজিস্ট্রি অফিস নির্ধারিত একটি সর্বনিম্ন বাজার মূল্য (মৌজা রেট) থাকে — এর চেয়ে কম মূল্য দেখিয়ে দলিল রেজিস্ট্রি করা যায় না। এই টুলটি শুধু গাণিতিক হিসাব করে (জমির পরিমাণ × মৌজা রেট); প্রকৃত মৌজা রেট সময়ে সময়ে পরিবর্তিত হয় এবং এলাকা, জমির শ্রেণি (ভিটা/কৃষি/বাণিজ্যিক) অনুযায়ী ভিন্ন হয় — চূড়ান্ত রেট সংশ্লিষ্ট সাব-রেজিস্ট্রি অফিসে যাচাই করে নিন।</div>
-</div>
-</div>
-<!-- ================= /MOUZA RATE VERIFICATION PAGE ================= -->
-
-<!-- ================= LAND TAX (KHAJNA) ARREARS CALCULATOR PAGE ================= -->
-<div class="page" id="page-ldtax">
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">খাজনা বকেয়া ক্যালকুলেটর</div>
-      <div class="sub-title">Land Tax (Khajna) Arrears Calculator</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="waris-layout">
-    <div class="panel">
-      <div class="waris-section">
-        <div class="waris-section-title">জমির ধরন</div>
-        <div class="gender-toggle">
-          <button data-type="agri" class="active" id="ldtAgriBtn">কৃষি জমি</button>
-          <button data-type="nonagri" id="ldtNonAgriBtn">অকৃষি (আবাসিক/বাণিজ্যিক)</button>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">জমির পরিমাণ</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="ldtArea" placeholder="যেমন: 10">
-          <select id="ldtUnit">
-            <option value="decimal">শতাংশ</option>
-            <option value="katha">কাঠা</option>
-            <option value="bigha">বিঘা</option>
-            <option value="acre">একর</option>
-          </select>
-        </div>
-      </div>
-      <div class="waris-section" id="ldtRateSection">
-        <div class="waris-section-title">প্রতি একক বার্ষিক কর হার (টাকা)</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="ldtRate" placeholder="যেমন: 200">
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">কত বছরের কর বকেয়া</div>
-        <div class="amount-row">
-          <input type="number" step="1" min="1" id="ldtYears" placeholder="যেমন: 5">
-          <select disabled style="opacity:.5;"><option>বছর</option></select>
-        </div>
-      </div>
-      <div class="waris-section">
-        <button class="calc-btn" id="ldtCalcBtn">হিসাব করুন — Calculate</button>
-        <div class="error-msg" id="ldtErrorMsg"></div>
-      </div>
-    </div>
-
-    <div class="panel" style="padding:18px 16px;">
-      <div class="waris-section-title" style="margin-bottom:14px;">আনুমানিক বকেয়া</div>
-      <div class="waris-results" id="ldtResults">
-        <div class="heir-note" style="font-size:13px;">বাম পাশে জমির তথ্য দিয়ে হিসাব করুন।</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="waris-disclaimer">এটি একটি আনুমানিক হিসাব। কৃষি জমি সর্বমোট ৮.২৫ একর (≈২৫ বিঘা) পর্যন্ত ভূমি উন্নয়ন কর মওকুফের আওতায় থাকে — এক্ষেত্রে শুধু বার্ষিক ১০ টাকা দাখিলা ফি প্রযোজ্য। অকৃষি (আবাসিক/বাণিজ্যিক) জমির প্রকৃত কর হার এলাকা ও শ্রেণিভেদে ভিন্ন হয় — আপনার হোল্ডিং-এর সঠিক হার ldtax.gov.bd থেকে যাচাই করে বসান। বকেয়া করের উপর প্রতি বছর আনুমানিক ৬.২৫% সুদ জ্যামিতিক হারে যোগ হয় বলে জানা যায় — চূড়ান্ত বকেয়ার সঠিক অংক জানতে ldtax.gov.bd-তে লগইন করুন বা স্থানীয় ভূমি অফিসে যোগাযোগ করুন। টানা ৩ বছর কর অপরিশোধিত থাকলে জমি খাস হয়ে যাওয়ার নিয়ম আছে, তাই দ্রুত পরিশোধ করাই ভালো।</div>
-</div>
-</div>
-<!-- ================= /LAND TAX (KHAJNA) ARREARS CALCULATOR PAGE ================= -->
-
-<!-- ================= KHATIAN/DAG SHARE CALCULATOR PAGE ================= -->
-<div class="page" id="page-sharedag">
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <div class="bn-title bn">খতিয়ান/দাগ অংশ ক্যালকুলেটর</div>
-      <div class="sub-title">Khatian Share Calculator</div>
-    </div>
-    <button class="home-btn" onclick="showPage('home')">← হোম / Home</button>
-  </header>
-
-  <div class="waris-layout">
-    <div class="panel">
-      <div class="waris-section">
-        <div class="waris-section-title">হিসাবের পদ্ধতি</div>
-        <div class="gender-toggle">
-          <button data-mode="ana" class="active" id="shareAnaBtn">আনা-গন্ডা-কড়া-ক্রান্তি</button>
-          <button data-mode="decimal" id="shareDecBtn">দশমিক অংশ (BRS)</button>
-        </div>
-      </div>
-      <div class="waris-section">
-        <div class="waris-section-title">মোট জমির পরিমাণ (খতিয়ান/দাগ অনুযায়ী)</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" id="shareTotalArea" placeholder="যেমন: 50">
-          <select id="shareTotalUnit">
-            <option value="decimal">শতাংশ</option>
-            <option value="katha">কাঠা</option>
-            <option value="bigha">বিঘা</option>
-            <option value="acre">একর</option>
-          </select>
-        </div>
-      </div>
-      <div class="waris-section" id="shareAnaInputs">
-        <div class="waris-section-title">আপনার অংশ (আনা-গন্ডা-কড়া-ক্রান্তি)</div>
-        <div class="mini-grid">
-          <div class="field">
-            <label>আনা <span class="bn">(০-১৫)</span></label>
-            <input type="number" step="1" min="0" max="15" id="shareAna" value="0">
-          </div>
-          <div class="field">
-            <label>গন্ডা <span class="bn">(০-১৯)</span></label>
-            <input type="number" step="1" min="0" max="19" id="shareGonda" value="0">
-          </div>
-          <div class="field">
-            <label>কড়া <span class="bn">(০-৩)</span></label>
-            <input type="number" step="1" min="0" max="3" id="shareKora" value="0">
-          </div>
-          <div class="field">
-            <label>ক্রান্তি <span class="bn">(০-২)</span></label>
-            <input type="number" step="1" min="0" max="2" id="shareKranti" value="0">
-          </div>
-        </div>
-      </div>
-      <div class="waris-section" id="shareDecInputs" style="display:none;">
-        <div class="waris-section-title">আপনার অংশ (দশমিকে, যেমন: ০.৫০০০)</div>
-        <div class="amount-row">
-          <input type="number" step="any" min="0" max="1" id="shareDecimalValue" placeholder="যেমন: 0.25">
-        </div>
-      </div>
-      <div class="waris-section">
-        <button class="calc-btn" id="shareCalcBtn">হিসাব করুন — Calculate</button>
-        <div class="error-msg" id="shareErrorMsg"></div>
-      </div>
-    </div>
-
-    <div class="panel" style="padding:18px 16px;">
-      <div class="waris-section-title" style="margin-bottom:14px;">ফলাফল</div>
-      <div class="waris-results" id="shareResults">
-        <div class="heir-note" style="font-size:13px;">বাম পাশে মোট জমি ও আপনার অংশ দিয়ে হিসাব করুন।</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="waris-disclaimer">সম্পত্তির পূর্ণ অংশ ১৬ আনা ধরে হিসাব করা হয় (১ আনা = ২০ গন্ডা, ১ গন্ডা = ৪ কড়া, ১ কড়া = ৩ ক্রান্তি)। এটি একটি গাণিতিক আনুমানিক হিসাব — প্রকৃত বণ্টনের জন্য দাগ নম্বর, খতিয়ান ও সরেজমিন জরিপের (আমিন/সার্ভেয়ার) মাধ্যমে যাচাই করে নেওয়া উচিত।</div>
-</div>
-</div>
-<!-- ================= /KHATIAN/DAG SHARE CALCULATOR PAGE ================= -->
 
 <script>
-/* ---------- page navigation ---------- */
-function showPage(name){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  window.scrollTo(0,0);
-}
-
-/* ---------- constants ---------- */
-const FEET_PER_METER = 3.28084;
-const UNIT_DIVISORS = { sqft:1, decimal:435.6, katha:720, bigha:14400, acre:43560 };
-
-const ICONS = {
-  rectangle: '<rect x="3" y="7" width="20" height="12"/>',
-  square: '<rect x="4" y="4" width="18" height="18"/>',
-  triangle: '<path d="M13 4 L23 21 L3 21 Z"/>',
-  obtusetriangle: '<path d="M2 21 L26 21 L18 6 Z"/>',
-  circle: '<circle cx="13" cy="13" r="10"/>',
-  trapezoid: '<path d="M6 6 L20 6 L25 21 L1 21 Z"/>',
-  irregular: '<path d="M4 5 L22 3 L25 18 L9 24 Z"/>',
-  parallelogram: '<path d="M6 21 L2 8 L22 8 L18 21 Z"/>',
-  lshape: '<path d="M3 3 L15 3 L15 12 L23 12 L23 23 L3 23 Z"/>',
-  polygon: '<path d="M13 2 L23 9 L20 21 L6 21 L3 9 Z"/>',
-  righttriangle: '<path d="M4 4 L4 22 L23 22 Z"/>',
-  semicircle: '<path d="M3 20 A10 10 0 0 1 23 20 Z"/>',
-  parabola: '<path d="M2 20 Q13 2 24 20"/>',
-  ellipse: '<ellipse cx="13" cy="13" rx="11" ry="7"/>'
+/* ============================================================
+   FIREBASE CONFIG
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDjJ2VeApQLcZZJK0gJIUv9XfCnW_Vj9eU",
+  authDomain: "typ-chapm.firebaseapp.com",
+  databaseURL: "https://typ-chapm-default-rtdb.firebaseio.com",
+  projectId: "typ-chapm",
+  storageBucket: "typ-chapm.firebasestorage.app",
+  messagingSenderId: "458844107492",
+  appId: "1:458844107492:web:78725241c1b5a7c80132f1",
+  measurementId: "G-D4N1KH50CE"
 };
 
-const SHAPES = {
-  rectangle: {
-    name:'Rectangle', bn:'আয়তক্ষেত্র',
-    fields:[
-      {id:'length', label:'Length', bn:'দৈর্ঘ্য'},
-      {id:'width', label:'Width', bn:'প্রস্থ'}
-    ],
-    rules:{
-      bn:'দৈর্ঘ্য ও প্রস্থ — দুটোই শূন্যের চেয়ে বড় হতে হবে। চার কোণই সমকোণ (৯০°) ধরা হয়।',
-      formula:'ক্ষেত্রফল = দৈর্ঘ্য × প্রস্থ'
-    }
-  },
-  square: {
-    name:'Square', bn:'বর্গক্ষেত্র',
-    fields:[
-      {id:'side', label:'Side', bn:'বাহু'}
-    ],
-    rules:{
-      bn:'একটি মাত্র বাহুর মাপ দিন — চারটি বাহুই সমান ও প্রতিটি কোণ সমকোণ ধরা হয়।',
-      formula:'ক্ষেত্রফল = বাহু × বাহু'
-    }
-  },
-  triangle: {
-    name:'Triangle', bn:'ত্রিভুজ',
-    fields:[
-      {id:'a', label:'Side A', bn:'বাহু ১'},
-      {id:'b', label:'Side B', bn:'বাহু ২'},
-      {id:'c', label:'Side C', bn:'বাহু ৩'}
-    ],
-    rules:{
-      bn:'তিনটি বাহুর মাপ দিন। হেরনের সূত্র দিয়ে ক্ষেত্রফল বের হয়। শর্ত: যেকোনো দুই বাহুর যোগফল অবশ্যই তৃতীয় বাহুর চেয়ে বড় হতে হবে — নাহলে ত্রিভুজ তৈরি হবে না।',
-      formula:'s = (a+b+c) ÷ ২,  ক্ষেত্রফল = √(s(s−a)(s−b)(s−c))'
-    }
-  },
-  obtusetriangle: {
-    name:'Obtuse Triangle', bn:'স্থূলকোণী ত্রিভুজ',
-    fields:[
-      {id:'a', label:'Side A', bn:'বাহু ১'},
-      {id:'b', label:'Side B', bn:'বাহু ২'},
-      {id:'c', label:'Side C', bn:'বাহু ৩'}
-    ],
-    rules:{
-      bn:'তিনটি বাহুর মাপ দিন। শর্ত: বৈধ ত্রিভুজ হতে হবে এবং সবচেয়ে বড় বাহুর বর্গ বাকি দুই বাহুর বর্গের যোগফলের চেয়ে বড় হতে হবে — তবেই একটি কোণ ৯০°-এর বেশি (স্থূলকোণ) হবে।',
-      formula:'হেরনের সূত্র — s = (a+b+c) ÷ ২,  ক্ষেত্রফল = √(s(s−a)(s−b)(s−c))'
-    }
-  },
-  circle: {
-    name:'Circle', bn:'বৃত্ত',
-    fields:[
-      {id:'radius', label:'Radius', bn:'ব্যাসার্ধ'}
-    ],
-    rules:{
-      bn:'কেন্দ্র থেকে পরিধি পর্যন্ত দূরত্ব (ব্যাসার্ধ) দিন — ব্যাস নয়।',
-      formula:'ক্ষেত্রফল = π × ব্যাসার্ধ²'
-    }
-  },
-  trapezoid: {
-    name:'Trapezoid', bn:'ট্রাপিজিয়াম',
-    fields:[
-      {id:'a', label:'Parallel Side A', bn:'সমান্তরাল বাহু ১'},
-      {id:'b', label:'Parallel Side B', bn:'সমান্তরাল বাহু ২'},
-      {id:'h', label:'Height', bn:'উচ্চতা'}
-    ],
-    rules:{
-      bn:'দুই সমান্তরাল বাহু (a, b) এবং তাদের মধ্যকার লম্ব উচ্চতা দিন।',
-      formula:'ক্ষেত্রফল = ((a + b) ÷ ২) × উচ্চতা'
-    }
-  },
-  irregular: {
-    name:'Irregular Plot', bn:'অনিয়মিত জমি',
-    fields:[
-      {id:'ab', label:'Side AB', bn:'বাহু এবি'},
-      {id:'bc', label:'Side BC', bn:'বাহু বিসি'},
-      {id:'cd', label:'Side CD', bn:'বাহু সিডি'},
-      {id:'da', label:'Side DA', bn:'বাহু ডিএ'},
-      {id:'diag', label:'Diagonal AC', bn:'কর্ণ এসি'}
-    ],
-    rules:{
-      bn:'চার বাহু (AB, BC, CD, DA) ও একটি কর্ণ (AC) দিন। কর্ণ জমিটিকে দুটি ত্রিভুজে ভাগ করে, প্রতিটির ক্ষেত্রফল হেরনের সূত্রে বের হয়ে যোগ করা হয়।',
-      formula:'ক্ষেত্রফল = ত্রিভুজ(AB,BC,AC) + ত্রিভুজ(AC,CD,DA)'
-    }
-  },
-  parallelogram: {
-    name:'Parallelogram', bn:'সামান্তরিক / রম্বস',
-    fields:[
-      {id:'base', label:'Base', bn:'ভূমি'},
-      {id:'side', label:'Slant Side', bn:'তির্যক বাহু'},
-      {id:'height', label:'Height (perpendicular)', bn:'লম্ব উচ্চতা'}
-    ],
-    rules:{
-      bn:'ভূমি, তির্যক বাহু ও লম্ব উচ্চতা দিন। লম্ব উচ্চতা কখনো তির্যক বাহুর চেয়ে বড় হতে পারে না।',
-      formula:'ক্ষেত্রফল = ভূমি × লম্ব উচ্চতা'
-    }
-  },
-  lshape: {
-    name:'L-Shape Plot', bn:'এল-আকৃতির জমি',
-    fields:[
-      {id:'L', label:'Full Length', bn:'সম্পূর্ণ দৈর্ঘ্য'},
-      {id:'W', label:'Full Width', bn:'সম্পূর্ণ প্রস্থ'},
-      {id:'cutL', label:'Cut-out Length', bn:'কাটা অংশের দৈর্ঘ্য'},
-      {id:'cutW', label:'Cut-out Width', bn:'কাটা অংশের প্রস্থ'}
-    ],
-    rules:{
-      bn:'পুরো আয়তক্ষেত্রের দৈর্ঘ্য-প্রস্থ এবং কোণ থেকে কেটে বাদ যাওয়া অংশের দৈর্ঘ্য-প্রস্থ দিন। কাটা অংশ অবশ্যই পুরো দৈর্ঘ্য ও প্রস্থের চেয়ে ছোট হতে হবে।',
-      formula:'ক্ষেত্রফল = (L × W) − (কাটা দৈর্ঘ্য × কাটা প্রস্থ)'
-    }
-  },
-  polygon: {
-    name:'Custom Polygon', bn:'বহুভুজ (৫-৮ বাহু)',
-    dynamic:true,
-    rules:{
-      bn:'বাহুর সংখ্যা (৫-৮) বেছে নিন, তারপর প্রতিটি বাহু ও প্রথম কোণ (A) থেকে টানা কর্ণগুলোর মাপ দিন। প্রতিটি কর্ণ বহুভুজকে ছোট ছোট ত্রিভুজে ভাগ করে।',
-      formula:'ক্ষেত্রফল = সবগুলো ত্রিভুজের ক্ষেত্রফলের যোগফল (হেরনের সূত্রে)'
-    }
-  },
-  righttriangle: {
-    name:'Right Triangle', bn:'সমকোণী ত্রিভুজ',
-    fields:[
-      {id:'base', label:'Base', bn:'ভূমি'},
-      {id:'height', label:'Height', bn:'উচ্চতা'}
-    ],
-    rules:{
-      bn:'ভূমি ও উচ্চতা — এই দুই বাহু পরস্পর সমকোণে (৯০°) মিলিত হয় ধরে নেওয়া হয়।',
-      formula:'ক্ষেত্রফল = ০.৫ × ভূমি × উচ্চতা'
-    }
-  },
-  semicircle: {
-    name:'Semi Circle', bn:'অর্ধবৃত্ত',
-    fields:[
-      {id:'radius', label:'Radius', bn:'ব্যাসার্ধ'}
-    ],
-    rules:{
-      bn:'পূর্ণ বৃত্তের ব্যাসার্ধ দিন — ফলাফল হবে তার অর্ধেক ক্ষেত্রফল।',
-      formula:'ক্ষেত্রফল = ০.৫ × π × ব্যাসার্ধ²'
-    }
-  },
-  parabola: {
-    name:'Parabola', bn:'প্যারাবোলা',
-    fields:[
-      {id:'length', label:'Length', bn:'দৈর্ঘ্য'},
-      {id:'height', label:'Height', bn:'উচ্চতা'}
-    ],
-    rules:{
-      bn:'ভিত্তির দৈর্ঘ্য (chord) এবং মাঝ বরাবর সর্বোচ্চ উচ্চতা দিন।',
-      formula:'ক্ষেত্রফল = (২ ÷ ৩) × দৈর্ঘ্য × উচ্চতা'
-    }
-  },
-  ellipse: {
-    name:'Ellipse', bn:'উপবৃত্ত',
-    fields:[
-      {id:'a', label:'Big Axis (a)', bn:'বড় অক্ষ'},
-      {id:'b', label:'Small Axis (b)', bn:'ছোট অক্ষ'}
-    ],
-    rules:{
-      bn:'পুরো বড় অক্ষ (a) ও পুরো ছোট অক্ষ (b) দিন — অর্ধেক নয়, সম্পূর্ণ মাপ।',
-      formula:'ক্ষেত্রফল = π × (a÷২) × (b÷২)'
-    }
-  }
-};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-let currentShape = 'rectangle';
-let currentUnit = 'ft';
-let polygonSides = 5;
+/* ============================================================
+   Admin PIN
+   ------------------------------------------------------------
+   Change this to whatever PIN you want. This is a simple
+   client-side gate, not real authentication — anyone who reads
+   this file's source can see the PIN, and the Realtime Database
+   rules below no longer check identity, only that a write is
+   happening. It stops casual visitors from editing, but it is
+   NOT secure against someone who inspects the page source.
+   ============================================================ */
+const ADMIN_PIN = "966066";
 
-function vLetter(i){ return String.fromCharCode(65+i); }
+/* ============================================================
+   Suggested Realtime Database rules (Firebase Console →
+   Realtime Database → Rules):
 
-function polygonFieldDefs(n){
-  const fields = [];
-  for(let k=0;k<n;k++){
-    fields.push({id:'s'+k, label:`Side ${vLetter(k)}${vLetter((k+1)%n)}`, bn:'বাহু'});
-  }
-  for(let k=2;k<=n-2;k++){
-    fields.push({id:'d'+k, label:`Diagonal ${vLetter(0)}${vLetter(k)}`, bn:'কর্ণ'});
-  }
-  return fields;
-}
+   {
+     "rules": {
+       "managers": {
+         ".read": true,
+         ".write": true
+       }
+     }
+   }
 
-/* ---------- build tabs ---------- */
-const tabsEl = document.getElementById('tabs');
-Object.keys(SHAPES).forEach(key=>{
-  const btn = document.createElement('button');
-  btn.className = 'tab-btn' + (key===currentShape?' active':'');
-  btn.dataset.shape = key;
-  btn.innerHTML = `<svg viewBox="0 0 28 28">${ICONS[key]}</svg><span>${SHAPES[key].name}</span>`;
-  btn.addEventListener('click', ()=>{
-    currentShape = key;
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('shapeName').textContent = SHAPES[key].name;
-    buildFields();
-    renderRules();
-    clearResults();
-  });
-  tabsEl.appendChild(btn);
-});
+   Since there is no Firebase Auth anymore, the database itself
+   can't tell an "admin" apart from anyone else — the PIN only
+   locks the UI, not the database. Anyone with the database URL
+   could technically write to it directly (e.g. via a script).
+   If that risk matters to you, keep Firebase Auth instead of a
+   plain PIN.
+   ============================================================ */
 
-/* ---------- unit toggle ---------- */
-document.querySelectorAll('.unit-toggle button').forEach(b=>{
-  b.addEventListener('click', ()=>{
-    currentUnit = b.dataset.unit;
-    document.querySelectorAll('.unit-toggle button').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-  });
-});
+const NUM_PLAYERS = 10;
+const MANAGER_KEYS = ['m1','m2','m3','m4','m5','m6'];
+let isAdmin = false;
+let managersData = {};
+let suppressWrite = {};
+let saveTimers = {};
 
-/* ---------- build input fields ---------- */
-function renderFieldList(fieldDefs){
-  const wrap = document.getElementById('fields');
-  fieldDefs.forEach(f=>{
-    const div = document.createElement('div');
-    div.className = 'field';
-    div.innerHTML = `<label>${f.label} <span class="bn">(${f.bn})</span></label>
-      <input type="number" step="any" min="0" id="in-${f.id}" placeholder="0.00">`;
-    wrap.appendChild(div);
-  });
-}
-
-function buildFields(){
-  const wrap = document.getElementById('fields');
-  wrap.innerHTML = '';
-
-  if(SHAPES[currentShape].dynamic){
-    const selDiv = document.createElement('div');
-    selDiv.className = 'field';
-    selDiv.innerHTML = `<label>Number of Sides <span class="bn">(বাহুর সংখ্যা)</span></label>
-      <select id="polySideCount" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:7px;font-family:'Space Mono',monospace;font-size:14px;background:var(--panel);">
-        ${[5,6,7,8].map(n=>`<option value="${n}" ${n===polygonSides?'selected':''}>${n}</option>`).join('')}
-      </select>`;
-    wrap.appendChild(selDiv);
-    document.getElementById('polySideCount').addEventListener('change', (e)=>{
-      polygonSides = parseInt(e.target.value);
-      const wrap2 = document.getElementById('fields');
-      wrap2.querySelectorAll('.field').forEach((el,i)=>{ if(i>0) el.remove(); });
-      renderFieldList(polygonFieldDefs(polygonSides));
-      renderSketch();
-    });
-    renderFieldList(polygonFieldDefs(polygonSides));
-  } else {
-    renderFieldList(SHAPES[currentShape].fields);
-  }
-}
-buildFields();
-
-/* ---------- rules box ---------- */
-function renderRules(){
-  const box = document.getElementById('rulesBox');
-  const r = SHAPES[currentShape].rules;
-  if(!r){ box.innerHTML=''; box.style.display='none'; return; }
-  box.style.display='block';
-  box.innerHTML = `
-    <div class="rules-title">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.5" r="0.6" fill="var(--blue-deep)" stroke="none"/></svg>
-      নিয়ম / Rules
-    </div>
-    <div class="rules-bn">${r.bn}</div>
-    ${r.formula ? `<div class="rules-formula">${r.formula}</div>` : ''}
-  `;
-}
-renderRules();
-
-/* ---------- helpers ---------- */
-function toFeet(v){ return currentUnit==='m' ? v*FEET_PER_METER : v; }
-
-function heron(a,b,c){
-  const s=(a+b+c)/2;
-  const inside = s*(s-a)*(s-b)*(s-c);
-  if(inside<=0) return null;
-  return Math.sqrt(inside);
-}
-
-function getVal(id){
-  const el = document.getElementById('in-'+id);
-  return el ? parseFloat(el.value) : NaN;
-}
-
-function showError(msg){
-  const e = document.getElementById('errorMsg');
-  e.textContent = msg;
-  e.classList.add('show');
-}
-function clearError(){
-  const e = document.getElementById('errorMsg');
-  e.classList.remove('show');
-  e.textContent='';
-}
-
-function clearResults(){
-  ['sqft','decimal','katha','bigha','acre'].forEach(id=>{
-    document.getElementById('r-'+id).textContent = '—';
-  });
-  document.getElementById('sketchBody').innerHTML = '';
-}
-
-/* ---------- area calculation per shape (returns sqft or throws) ---------- */
-function computeAreaSqft(){
-  const f = SHAPES[currentShape].dynamic ? polygonFieldDefs(polygonSides) : SHAPES[currentShape].fields;
-  const vals = {};
-  for(const field of f){
-    const v = getVal(field.id);
-    if(isNaN(v) || v<=0) throw new Error('সব মাপ পূরণ করুন (সব ঘর অবশ্যই শূন্যের চেয়ে বড় সংখ্যা হতে হবে) — Please fill all fields with values greater than 0.');
-    vals[field.id] = toFeet(v);
-  }
-
-  let areaSqft;
-  switch(currentShape){
-    case 'rectangle':
-      areaSqft = vals.length * vals.width;
-      break;
-    case 'square':
-      areaSqft = vals.side * vals.side;
-      break;
-    case 'triangle': {
-      const area = heron(vals.a, vals.b, vals.c);
-      if(area===null) throw new Error('এই তিনটি বাহু দিয়ে কোনো ত্রিভুজ তৈরি হয় না — These three sides cannot form a triangle.');
-      areaSqft = area;
-      break;
-    }
-    case 'obtusetriangle': {
-      const area = heron(vals.a, vals.b, vals.c);
-      if(area===null) throw new Error('এই তিনটি বাহু দিয়ে কোনো ত্রিভুজ তৈরি হয় না — These three sides cannot form a triangle.');
-      const sorted = [vals.a, vals.b, vals.c].sort((x,y)=>x-y);
-      const [s1,s2,s3] = sorted;
-      if(s3*s3 <= s1*s1 + s2*s2) throw new Error('এই বাহুগুলো দিয়ে স্থূলকোণী ত্রিভুজ তৈরি হয় না (এটি সমকোণী বা সূক্ষ্মকোণী ত্রিভুজ) — These sides do not form an obtuse triangle.');
-      areaSqft = area;
-      break;
-    }
-    case 'circle':
-      areaSqft = Math.PI * vals.radius * vals.radius;
-      break;
-    case 'trapezoid':
-      areaSqft = (vals.a + vals.b) / 2 * vals.h;
-      break;
-    case 'irregular': {
-      const t1 = heron(vals.ab, vals.bc, vals.diag);
-      const t2 = heron(vals.diag, vals.cd, vals.da);
-      if(t1===null || t2===null) throw new Error('এই মাপগুলো দিয়ে বৈধ জমির আকার তৈরি হয় না — These measurements cannot form a valid plot. Check the diagonal and side lengths.');
-      areaSqft = t1 + t2;
-      break;
-    }
-    case 'parallelogram': {
-      if(vals.height > vals.side) throw new Error('উচ্চতা তির্যক বাহুর চেয়ে বড় হতে পারে না — Height cannot be greater than the slant side.');
-      areaSqft = vals.base * vals.height;
-      break;
-    }
-    case 'lshape': {
-      if(vals.cutL >= vals.L || vals.cutW >= vals.W) throw new Error('কাটা অংশ সম্পূর্ণ দৈর্ঘ্য/প্রস্থের চেয়ে ছোট হতে হবে — The cut-out must be smaller than the full length/width.');
-      areaSqft = (vals.L * vals.W) - (vals.cutL * vals.cutW);
-      break;
-    }
-    case 'polygon': {
-      const n = polygonSides;
-      const diagAt = (k)=>{
-        if(k===1) return vals.s0;
-        if(k===n-1) return vals['s'+(n-1)];
-        return vals['d'+k];
-      };
-      let total = 0;
-      for(let i=1;i<=n-2;i++){
-        const t = heron(diagAt(i), vals['s'+i], diagAt(i+1));
-        if(t===null) throw new Error('এই মাপগুলো দিয়ে বৈধ জমির আকার তৈরি হয় না — These measurements cannot form a valid plot. Check the side and diagonal lengths.');
-        total += t;
-      }
-      areaSqft = total;
-      break;
-    }
-    case 'righttriangle':
-      areaSqft = 0.5 * vals.base * vals.height;
-      break;
-    case 'semicircle':
-      areaSqft = 0.5 * Math.PI * vals.radius * vals.radius;
-      break;
-    case 'parabola':
-      areaSqft = (2/3) * vals.length * vals.height;
-      break;
-    case 'ellipse':
-      areaSqft = (vals.a/2) * (vals.b/2) * Math.PI;
-      break;
-  }
-  return { areaSqft, vals };
-}
-
-/* ---------- number formatting ---------- */
-function fmt(n){
-  if(n>=1000) return n.toLocaleString('en-US',{maximumFractionDigits:1});
-  return n.toLocaleString('en-US',{maximumFractionDigits: n<1?4:2});
-}
-
-/* ---------- SVG sketch rendering ---------- */
-const VB_W = 460, VB_H = 340, PAD = 56;
-
-function svgWrap(inner){
-  return `<svg viewBox="0 0 ${VB_W} ${VB_H}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
-}
-
-function fitPoints(points){
-  const xs = points.map(p=>p[0]), ys = points.map(p=>p[1]);
-  const minX=Math.min(...xs), maxX=Math.max(...xs);
-  const minY=Math.min(...ys), maxY=Math.max(...ys);
-  const w = Math.max(maxX-minX, 0.001), h = Math.max(maxY-minY, 0.001);
-  const availW = VB_W-2*PAD, availH = VB_H-2*PAD;
-  const scale = Math.min(availW/w, availH/h);
-  const offX = PAD + (availW - w*scale)/2 - minX*scale;
-  const offY = PAD + (availH - h*scale)/2 - minY*scale;
-  return points.map(p=>[p[0]*scale+offX, VB_H-(p[1]*scale+offY)]); // flip Y for screen coords
-}
-
-function unitLabel(v){
-  return fmt(v) + (currentUnit==='ft' ? ' ft' : ' m');
-}
-
-function dimLabel(p1,p2,realLength, offsetDir=1){
-  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
-  const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
-  const len=Math.hypot(dx,dy)||1;
-  const nx=-dy/len, ny=dx/len;
-  const lx = mx + nx*16*offsetDir, ly = my + ny*16*offsetDir;
-  return `<text x="${lx}" y="${ly}" text-anchor="middle" font-family="Space Mono, monospace" font-size="12" fill="var(--red)">${unitLabel(realLength)}</text>`;
-}
-
-function polyPath(pts, close=true){
-  return pts.map((p,i)=>(i===0?'M':'L')+p[0]+' '+p[1]).join(' ') + (close?' Z':'');
-}
-
-function autoEdges(pts){
-  return pts.map((p,i)=>{
-    const q = pts[(i+1)%pts.length];
-    return [p,q,Math.hypot(q[0]-p[0], q[1]-p[1])];
-  });
-}
-
-function renderSketch(){
-  const body = document.getElementById('sketchBody');
-  let raw, realEdges = [], diagonalPairs = [];
-
-  try{
-    const vals = {};
-    const fieldDefs = SHAPES[currentShape].dynamic ? polygonFieldDefs(polygonSides) : SHAPES[currentShape].fields;
-    fieldDefs.forEach(f=>{
-      const v = getVal(f.id);
-      vals[f.id] = isNaN(v)||v<=0 ? null : toFeet(v);
-    });
-
-    if(currentShape==='rectangle'){
-      const L = vals.length||120, W = vals.width||80;
-      raw = [[0,0],[L,0],[L,W],[0,W]];
-    } else if(currentShape==='square'){
-      const S = vals.side||100;
-      raw = [[0,0],[S,0],[S,S],[0,S]];
-    } else if(currentShape==='triangle'){
-      const a=vals.a||70, b=vals.b||90, c=vals.c||100;
-      const cosA = (b*b+c*c-a*a)/(2*b*c);
-      const angleA = Math.acos(Math.min(1,Math.max(-1,cosA)));
-      raw=[[0,0],[c,0],[b*Math.cos(angleA), b*Math.sin(angleA)]];
-    } else if(currentShape==='obtusetriangle'){
-      const a=vals.a||70, b=vals.b||140, c=vals.c||160;
-      const cosA = (b*b+c*c-a*a)/(2*b*c);
-      const angleA = Math.acos(Math.min(1,Math.max(-1,cosA)));
-      raw=[[0,0],[c,0],[b*Math.cos(angleA), b*Math.sin(angleA)]];
-    } else if(currentShape==='circle'){
-      const r = vals.radius||60;
-      raw=[[-r,-r],[r,-r],[r,r],[-r,r]]; // bounding box for fit
-    } else if(currentShape==='trapezoid'){
-      const a=vals.a||140, b=vals.b||80, h=vals.h||70;
-      raw=[[0,0],[a,0],[(a-b)/2+b,h],[(a-b)/2,h]];
-    } else if(currentShape==='irregular'){
-      const ab=vals.ab||90, bc=vals.bc||70, cd=vals.cd||85, da=vals.da||75, diag=vals.diag||110;
-      const A=[0,0], B=[ab,0];
-      const cosBAC = (ab*ab+diag*diag-bc*bc)/(2*ab*diag);
-      const angBAC = Math.acos(Math.min(1,Math.max(-1,cosBAC)));
-      const C=[diag*Math.cos(angBAC), diag*Math.sin(angBAC)];
-      const cosCAD = (diag*diag+da*da-cd*cd)/(2*diag*da);
-      const angCAD = Math.acos(Math.min(1,Math.max(-1,cosCAD)));
-      const D=[da*Math.cos(angBAC+angCAD), da*Math.sin(angBAC+angCAD)];
-      raw=[A,B,C,D];
-      diagonalPairs=[[0,2]];
-    } else if(currentShape==='parallelogram'){
-      const base=vals.base||120, side=vals.side||80, height=vals.height||55;
-      const ratio = Math.min(1, height/side);
-      const theta = Math.asin(ratio);
-      const dx = side*Math.cos(theta);
-      raw=[[0,0],[base,0],[base+dx,height],[dx,height]];
-    } else if(currentShape==='lshape'){
-      const L=vals.L||160, W=vals.W||120, cutL=vals.cutL||60, cutW=vals.cutW||50;
-      const cL = Math.min(cutL, L*0.7), cW = Math.min(cutW, W*0.7);
-      raw=[[0,0],[L,0],[L,W-cW],[L-cL,W-cW],[L-cL,W],[0,W]];
-    } else if(currentShape==='polygon'){
-      const n = polygonSides;
-      const s = k=>vals['s'+k] || 70;
-      const d = k=>vals['d'+k] || (s(0)*1.3);
-      const diagAt = (k)=>{
-        if(k===1) return s(0);
-        if(k===n-1) return s(n-1);
-        return d(k);
-      };
-      const pts = [[0,0]];
-      pts.push([s(0),0]);
-      let cumAngle = 0;
-      for(let i=2;i<=n-1;i++){
-        const d0 = i===2 ? s(0) : diagAt(i-1);
-        const side = s(i-1);
-        const d1 = diagAt(i);
-        const cosAng = (d0*d0+d1*d1-side*side)/(2*d0*d1);
-        const incAng = Math.acos(Math.min(1,Math.max(-1,cosAng)));
-        cumAngle = i===2 ? incAng : cumAngle + incAng;
-        pts.push([d1*Math.cos(cumAngle), d1*Math.sin(cumAngle)]);
-      }
-      raw = pts;
-      for(let k=2;k<=n-2;k++) diagonalPairs.push([0,k]);
-    } else if(currentShape==='righttriangle'){
-      const base=vals.base||120, height=vals.height||80;
-      raw=[[0,0],[base,0],[0,height]];
-    } else if(currentShape==='parabola'){
-      const len=vals.length||160, h=vals.height||70;
-      raw=[[0,0],[len,0],[len/2,h]]; // bounding triangle placeholder, curve drawn separately
-    } else if(currentShape==='ellipse'){
-      const a=vals.a||160, b=vals.b||90;
-      raw=[[-a/2,-b/2],[a/2,-b/2],[a/2,b/2],[-a/2,b/2]]; // bounding box for fit
-    }
-
-    realEdges = (currentShape!=='circle' && currentShape!=='semicircle' && currentShape!=='parabola' && currentShape!=='ellipse') ? autoEdges(raw) : [];
-
-    let inner='';
-    if(currentShape==='circle'){
-      const fitted = fitPoints(raw);
-      const cx=(fitted[0][0]+fitted[2][0])/2, cy=(fitted[0][1]+fitted[2][1])/2;
-      const rPx = Math.abs(fitted[1][0]-fitted[0][0])/2;
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rPx}" fill="var(--blue-tint)" stroke="var(--blue)" stroke-width="2"/>`;
-      inner += `<line x1="${cx}" y1="${cy}" x2="${cx+rPx}" y2="${cy}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      inner += `<circle cx="${cx}" cy="${cy}" r="2.5" fill="var(--ink)"/>`;
-      inner += `<text x="${cx+rPx/2}" y="${cy-8}" text-anchor="middle" font-family="Space Mono, monospace" font-size="12" fill="var(--red)">r = ${unitLabel(vals.radius||60)}</text>`;
-    } else if(currentShape==='semicircle'){
-      const r = vals.radius||60;
-      const boundBox = [[-r,0],[r,0],[r,r],[-r,r]];
-      const fitted = fitPoints(boundBox);
-      const cx=(fitted[0][0]+fitted[1][0])/2, cy=fitted[0][1];
-      const rPx = Math.abs(fitted[1][0]-fitted[0][0])/2;
-      inner += `<path d="M ${fitted[0][0]} ${fitted[0][1]} A ${rPx} ${rPx} 0 0 1 ${fitted[1][0]} ${fitted[1][1]} Z" fill="var(--blue-tint)" stroke="var(--blue)" stroke-width="2"/>`;
-      inner += `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-rPx}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      inner += `<text x="${cx+18}" y="${cy-rPx/2}" text-anchor="middle" font-family="Space Mono, monospace" font-size="12" fill="var(--red)">r = ${unitLabel(r)}</text>`;
-      inner += dimLabel(fitted[0],fitted[1], 2*r, -1);
-    } else if(currentShape==='parabola'){
-      const len=vals.length||160, h=vals.height||70;
-      const boundBox = [[0,0],[len,0],[len,h],[0,h]];
-      const fitted = fitPoints(boundBox);
-      const left=fitted[0], right=fitted[1], topY=fitted[2][1];
-      const midX=(left[0]+right[0])/2;
-      inner += `<path d="M ${left[0]} ${left[1]} Q ${midX} ${topY} ${right[0]} ${right[1]} Z" fill="var(--blue-tint)" stroke="var(--blue)" stroke-width="2"/>`;
-      inner += `<line x1="${midX}" y1="${left[1]}" x2="${midX}" y2="${topY}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      inner += dimLabel(left,right,len,1);
-      inner += `<text x="${midX+20}" y="${(left[1]+topY)/2}" text-anchor="middle" font-family="Space Mono, monospace" font-size="12" fill="var(--red)">${unitLabel(h)}</text>`;
-    } else if(currentShape==='ellipse'){
-      const a=vals.a||160, b=vals.b||90;
-      const fitted = fitPoints(raw);
-      const cx=(fitted[0][0]+fitted[2][0])/2, cy=(fitted[0][1]+fitted[2][1])/2;
-      const rx=Math.abs(fitted[1][0]-fitted[0][0])/2, ry=Math.abs(fitted[2][1]-fitted[1][1])/2;
-      inner += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="var(--blue-tint)" stroke="var(--blue)" stroke-width="2"/>`;
-      inner += `<line x1="${cx-rx}" y1="${cy}" x2="${cx+rx}" y2="${cy}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      inner += `<line x1="${cx}" y1="${cy-ry}" x2="${cx}" y2="${cy+ry}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      inner += `<text x="${cx}" y="${cy-ry-8}" text-anchor="middle" font-family="Space Mono, monospace" font-size="12" fill="var(--red)">a = ${unitLabel(a)}</text>`;
-      inner += `<text x="${cx+rx+34}" y="${cy}" text-anchor="middle" font-family="Space Mono, monospace" font-size="12" fill="var(--red)">b = ${unitLabel(b)}</text>`;
-    } else {
-      const fitted = fitPoints(raw);
-      inner += `<path d="${polyPath(fitted)}" fill="var(--blue-tint)" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>`;
-      realEdges.forEach((edge, idx)=>{
-        const p1 = fitted[idx];
-        const p2 = fitted[(idx+1)%fitted.length];
-        inner += dimLabel(p1,p2,edge[2],1);
-      });
-      fitted.forEach(p=>{ inner += `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="var(--ink)"/>`; });
-
-      diagonalPairs.forEach(([i,j])=>{
-        inner += `<line x1="${fitted[i][0]}" y1="${fitted[i][1]}" x2="${fitted[j][0]}" y2="${fitted[j][1]}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
-      });
-    }
-    body.innerHTML = svgWrap(inner);
-  } catch(e){
-    body.innerHTML = '';
-  }
-}
-
-/* live preview as user types */
-document.getElementById('fields').addEventListener('input', renderSketch);
-document.querySelectorAll('.unit-toggle button').forEach(b=>b.addEventListener('click', renderSketch));
-
-/* re-render on shape switch after fields rebuild */
-const _origBuildFields = buildFields;
-buildFields = function(){ _origBuildFields(); renderSketch(); };
-renderSketch();
-
-/* ---------- calculate button ---------- */
-document.getElementById('calcBtn').addEventListener('click', ()=>{
-  clearError();
-  try{
-    const { areaSqft } = computeAreaSqft();
-    document.getElementById('r-sqft').textContent = fmt(areaSqft);
-    document.getElementById('r-decimal').textContent = fmt(areaSqft/UNIT_DIVISORS.decimal);
-    document.getElementById('r-katha').textContent = fmt(areaSqft/UNIT_DIVISORS.katha);
-    document.getElementById('r-bigha').textContent = fmt(areaSqft/UNIT_DIVISORS.bigha);
-    document.getElementById('r-acre').textContent = fmt(areaSqft/UNIT_DIVISORS.acre);
-    renderSketch();
-  }catch(err){
-    showError(err.message);
-    clearResults();
-  }
-});
-
-/* =====================================================================
-   WARIS (ISLAMIC INHERITANCE / FARAID) CALCULATOR
-   Hanafi-oriented simplified engine covering the most common heirs:
-   husband/wife, father, mother, paternal grandfather, grandmother,
-   sons, daughters, full brothers, full sisters.
-   ===================================================================== */
-
-/* ---------- exact fraction helper ---------- */
-function gcdF(a,b){ a=Math.abs(a); b=Math.abs(b); return b? gcdF(b,a%b) : (a||1); }
-class Frac{
-  constructor(n,d=1){
-    if(d<0){ n=-n; d=-d; }
-    const g = gcdF(n,d);
-    this.n = g? n/g : n;
-    this.d = g? d/g : d;
-  }
-  add(o){ return new Frac(this.n*o.d + o.n*this.d, this.d*o.d); }
-  sub(o){ return new Frac(this.n*o.d - o.n*this.d, this.d*o.d); }
-  mul(o){ return new Frac(this.n*o.n, this.d*o.d); }
-  div(o){ return new Frac(this.n*o.d, this.d*o.n); }
-  cmp(o){ return this.n*o.d - o.n*this.d; }
-  toNumber(){ return this.n/this.d; }
-  toString(){ return this.d===1 ? `${this.n}` : `${this.n}/${this.d}`; }
-}
-const Fr = (n,d=1)=> new Frac(n,d);
-
-/* ---------- core Faraid engine ---------- */
-function computeWaris(inp){
-  const {
-    deceasedGender, hasHusband, wivesCount,
-    hasFather, hasGrandfather, hasMother, hasGrandmother,
-    sonsCount, daughtersCount, brothersCount, sistersCount
-  } = inp;
-
-  const heirs = [];
-  let totalFixed = Fr(0);
-
-  const hasChildren = sonsCount>0 || daughtersCount>0;
-  const effHasFather = hasFather;
-  const effHasGrandfather = !hasFather && hasGrandfather;
-  const patriarchType = effHasFather ? 'father' : (effHasGrandfather ? 'grandfather' : null);
-  const patriarchLabel = patriarchType==='father' ? 'বাবা' : 'দাদা';
-
-  const siblingsBlocked = !!patriarchType || sonsCount>0;
-  const effBrothers = siblingsBlocked ? 0 : brothersCount;
-  const effSisters  = siblingsBlocked ? 0 : sistersCount;
-
-  /* spouse */
-  let spouseShare = null;
-  if(deceasedGender==='female' && hasHusband){
-    const share = hasChildren ? Fr(1,4) : Fr(1,2);
-    heirs.push({key:'husband', bn:'স্বামী', count:1, fraction:share});
-    totalFixed = totalFixed.add(share);
-    spouseShare = share;
-  }
-  if(deceasedGender==='male' && wivesCount>0){
-    const totalShare = hasChildren ? Fr(1,8) : Fr(1,4);
-    heirs.push({key:'wife', bn:'স্ত্রী', count:wivesCount, fraction:totalShare, perHead:totalShare.div(Fr(wivesCount))});
-    totalFixed = totalFixed.add(totalShare);
-    spouseShare = totalShare;
-  }
-
-  /* mother (siblings reduce her share even if the siblings themselves are blocked) */
-  if(hasMother){
-    const twoPlusSiblings = (brothersCount+sistersCount) >= 2;
-    let mShare = (hasChildren || twoPlusSiblings) ? Fr(1,6) : Fr(1,3);
-    /* Gharrawayn/Umariyyatain exception: father + mother + spouse, no children, <2 siblings —
-       mother takes 1/3 of what remains after the spouse's share, not 1/3 of the whole estate */
-    let gharrawaynApplied=false;
-    if(!hasChildren && !twoPlusSiblings && spouseShare && hasFather){
-      mShare = Fr(1,3).mul(Fr(1).sub(spouseShare));
-      gharrawaynApplied=true;
-    }
-    heirs.push({key:'mother', bn:'মা', count:1, fraction:mShare, gharrawaynApplied});
-    totalFixed = totalFixed.add(mShare);
-  }
-  /* grandmother, only steps in if mother absent */
-  if(!hasMother && hasGrandmother){
-    const gm = Fr(1,6);
-    heirs.push({key:'grandmother', bn:'দাদি/নানি', count:1, fraction:gm});
-    totalFixed = totalFixed.add(gm);
-  }
-
-  /* father / grandfather fixed 1/6 portion (only when there are children) */
-  if(patriarchType){
-    if(hasChildren){
-      const pShare = Fr(1,6);
-      heirs.push({key:patriarchType, bn:patriarchLabel, count:1, fraction:pShare, isPatriarch:true});
-      totalFixed = totalFixed.add(pShare);
-    } else {
-      heirs.push({key:patriarchType, bn:patriarchLabel, count:1, fraction:Fr(0), isPatriarch:true, residuaryPlaceholder:true});
-    }
-  }
-
-  /* daughters as fixed sharers, only when there is no son */
-  if(sonsCount===0 && daughtersCount>0){
-    const dShare = daughtersCount===1 ? Fr(1,2) : Fr(2,3);
-    heirs.push({key:'daughters', bn:'মেয়ে', count:daughtersCount, fraction:dShare, perHead:dShare.div(Fr(daughtersCount))});
-    totalFixed = totalFixed.add(dShare);
-  }
-
-  /* sisters as primary fixed sharers: only when no sons/daughters/patriarch/brothers */
-  if(sonsCount===0 && daughtersCount===0 && !patriarchType && effBrothers===0 && effSisters>0){
-    const sShare = effSisters===1 ? Fr(1,2) : Fr(2,3);
-    heirs.push({key:'sisters', bn:'সহোদর বোন', count:effSisters, fraction:sShare, perHead:sShare.div(Fr(effSisters))});
-    totalFixed = totalFixed.add(sShare);
-  }
-
-  if(heirs.length===0){
-    return { heirs:[], awlApplied:false, error:'কমপক্ষে একজন ওয়ারিশ নির্বাচন করুন।' };
-  }
-
-  /* 'Awl (increase) — fixed shares exceed the whole estate: scale everyone down proportionally */
-  let residue, awlApplied=false;
-  if(totalFixed.cmp(Fr(1)) > 0){
-    awlApplied = true;
-    const factor = Fr(1).div(totalFixed);
-    heirs.forEach(h=>{
-      h.fraction = h.fraction.mul(factor);
-      if(h.perHead) h.perHead = h.perHead.mul(factor);
-    });
-    residue = Fr(0);
-  } else {
-    residue = Fr(1).sub(totalFixed);
-  }
-
-  /* residuary (Asaba) distribution */
-  if(!awlApplied && residue.n>0){
-    if(sonsCount>0){
-      const totalUnits = sonsCount*2 + daughtersCount;
-      const perUnit = residue.div(Fr(totalUnits));
-      heirs.push({key:'sons', bn:'ছেলে', count:sonsCount, fraction:perUnit.mul(Fr(2*sonsCount)), perHead:perUnit.mul(Fr(2))});
-      if(daughtersCount>0){
-        heirs.push({key:'daughters_res', bn:'মেয়ে', count:daughtersCount, fraction:perUnit.mul(Fr(daughtersCount)), perHead:perUnit});
-      }
-    } else if(patriarchType && !hasChildren){
-      const ph = heirs.find(h=>h.residuaryPlaceholder);
-      ph.fraction = residue;
-      delete ph.residuaryPlaceholder;
-    } else if(patriarchType && hasChildren){
-      const ph = heirs.find(h=>h.isPatriarch);
-      ph.fraction = ph.fraction.add(residue);
-      ph.plusResidue = true;
-    } else if(daughtersCount>0 && (effBrothers>0 || effSisters>0)){
-      const totalUnits = effBrothers*2 + effSisters;
-      const perUnit = residue.div(Fr(totalUnits));
-      if(effBrothers>0) heirs.push({key:'brothers', bn:'সহোদর ভাই', count:effBrothers, fraction:perUnit.mul(Fr(2*effBrothers)), perHead:perUnit.mul(Fr(2))});
-      if(effSisters>0) heirs.push({key:'sisters_res', bn:'সহোদর বোন', count:effSisters, fraction:perUnit.mul(Fr(effSisters)), perHead:perUnit});
-    } else if(effBrothers>0){
-      const totalUnits = effBrothers*2 + effSisters;
-      const perUnit = residue.div(Fr(totalUnits));
-      heirs.push({key:'brothers', bn:'সহোদর ভাই', count:effBrothers, fraction:perUnit.mul(Fr(2*effBrothers)), perHead:perUnit.mul(Fr(2))});
-      if(effSisters>0) heirs.push({key:'sisters_res', bn:'সহোদর বোন', count:effSisters, fraction:perUnit.mul(Fr(effSisters)), perHead:perUnit});
-    } else {
-      /* Radd (return): give the leftover back proportionally to fixed sharers, spouse excluded unless spouse is the only heir */
-      const raddCandidates = heirs.filter(h=> h.key!=='husband' && h.key!=='wife' && h.fraction.n>0);
-      if(raddCandidates.length>0){
-        const base = raddCandidates.reduce((acc,h)=>acc.add(h.fraction), Fr(0));
-        raddCandidates.forEach(h=>{
-          const extra = residue.mul(h.fraction).div(base);
-          h.fraction = h.fraction.add(extra);
-          if(h.perHead) h.perHead = h.fraction.div(Fr(h.count));
-        });
-      } else {
-        const spouseHeir = heirs.find(h=>h.key==='husband'||h.key==='wife');
-        if(spouseHeir){
-          spouseHeir.fraction = spouseHeir.fraction.add(residue);
-          if(spouseHeir.perHead) spouseHeir.perHead = spouseHeir.fraction.div(Fr(spouseHeir.count));
-        }
-      }
-    }
-  }
-
-  return { heirs, awlApplied };
-}
-
-/* ---------- gender toggle ---------- */
-const genderMaleBtn = document.getElementById('genderMaleBtn');
-const genderFemaleBtn = document.getElementById('genderFemaleBtn');
-const rowHusband = document.getElementById('rowHusband');
-const rowWife = document.getElementById('rowWife');
-
-function updateSpouseRows(){
-  if(genderMaleBtn.classList.contains('active')){
-    rowHusband.style.display='none';
-    rowWife.style.display='flex';
-  } else {
-    rowHusband.style.display='flex';
-    rowWife.style.display='none';
-  }
-}
-genderMaleBtn.addEventListener('click', ()=>{
-  genderMaleBtn.classList.add('active'); genderFemaleBtn.classList.remove('active');
-  updateSpouseRows();
-});
-genderFemaleBtn.addEventListener('click', ()=>{
-  genderFemaleBtn.classList.add('active'); genderMaleBtn.classList.remove('active');
-  updateSpouseRows();
-});
-updateSpouseRows();
-
-/* keep father/grandfather and mother/grandmother mutually sensible */
-const hasFatherEl = document.getElementById('hasFather');
-const hasGrandfatherEl = document.getElementById('hasGrandfather');
-const hasMotherEl = document.getElementById('hasMother');
-const hasGrandmotherEl = document.getElementById('hasGrandmother');
-hasFatherEl.addEventListener('change', ()=>{ if(hasFatherEl.checked){ hasGrandfatherEl.checked=false; } });
-hasMotherEl.addEventListener('change', ()=>{ if(hasMotherEl.checked){ hasGrandmotherEl.checked=false; } });
-
-/* ---------- render results ---------- */
-function fmtWaris(n){
-  if(n>=1000) return n.toLocaleString('en-US',{maximumFractionDigits:2});
-  return n.toLocaleString('en-US',{maximumFractionDigits: n<1?4:3});
-}
-
-function clearWarisError(){
-  const e = document.getElementById('warisErrorMsg');
-  e.classList.remove('show'); e.textContent='';
-}
-function showWarisError(msg){
-  const e = document.getElementById('warisErrorMsg');
-  e.textContent = msg; e.classList.add('show');
-}
-
-document.getElementById('warisCalcBtn').addEventListener('click', ()=>{
-  clearWarisError();
-  const totalAmount = parseFloat(document.getElementById('warisAmount').value);
-  const unit = document.getElementById('warisUnit').value;
-  const resultsBox = document.getElementById('warisResults');
-
-  if(isNaN(totalAmount) || totalAmount<=0){
-    showWarisError('মোট সম্পত্তির সঠিক পরিমাণ দিন (শূন্যের চেয়ে বড় সংখ্যা)।');
-    return;
-  }
-
-  const deceasedGender = genderMaleBtn.classList.contains('active') ? 'male' : 'female';
-  const inp = {
-    deceasedGender,
-    hasHusband: document.getElementById('hasHusband').checked,
-    wivesCount: parseInt(document.getElementById('wivesCount').value) || 0,
-    hasFather: hasFatherEl.checked,
-    hasGrandfather: hasGrandfatherEl.checked,
-    hasMother: hasMotherEl.checked,
-    hasGrandmother: hasGrandmotherEl.checked,
-    sonsCount: parseInt(document.getElementById('sonsCount').value) || 0,
-    daughtersCount: parseInt(document.getElementById('daughtersCount').value) || 0,
-    brothersCount: parseInt(document.getElementById('brothersCount').value) || 0,
-    sistersCount: parseInt(document.getElementById('sistersCount').value) || 0
+function emptyManager() {
+  return {
+    managerName: '',
+    totalPoint: '',
+    players: Array.from({length: NUM_PLAYERS}, () => ({name: '', coins: ''}))
   };
-
-  const { heirs, awlApplied, error } = computeWaris(inp);
-
-  if(error){ showWarisError(error); return; }
-
-  let html = '';
-  heirs.forEach(h=>{
-    const amount = h.fraction.toNumber() * totalAmount;
-    const pct = h.fraction.toNumber() * 100;
-    const countTag = h.count>1 ? `<span class="count-tag">${h.count} জন</span>` : '';
-    const noteTag = h.plusResidue ? ' + অবশিষ্টাংশ' : '';
-    html += `<div class="waris-result-row">
-      <div class="heir-label">${h.bn}${countTag}</div>
-      <div class="heir-frac">${h.fraction.toString()}${noteTag} · ${fmtWaris(pct)}%</div>
-      <div class="heir-amount">${fmtWaris(amount)} ${unit}</div>
-      ${h.perHead ? `<div class="heir-perhead">প্রতিজন ≈ ${fmtWaris(h.perHead.toNumber()*totalAmount)} ${unit}</div>` : ''}
-    </div>`;
-  });
-
-  if(awlApplied){
-    html += `<div class="waris-note-box">দ্রষ্টব্য: মোট নির্ধারিত অংশ পূর্ণ সম্পত্তির চেয়ে বেশি হয়ে যাচ্ছিল, তাই "আওল" নিয়ম অনুযায়ী সবার ভাগ সমানুপাতিক হারে কমিয়ে সমন্বয় করা হয়েছে।</div>`;
-  }
-  if(heirs.some(h=>h.gharrawaynApplied)){
-    html += `<div class="waris-note-box">দ্রষ্টব্য: বাবা, মা ও স্বামী/স্ত্রী একসাথে থাকায় (এবং সন্তান/দুই বা ততোধিক ভাই-বোন না থাকায়) এখানে "গাররাওয়াইন" নিয়ম প্রযোজ্য — মা স্বামী/স্ত্রীর অংশ বাদ দিয়ে অবশিষ্টাংশের ১/৩ পাবেন, পুরো সম্পত্তির ১/৩ নয়।</div>`;
-  }
-
-  resultsBox.innerHTML = html;
-});
-
-/* =====================================================================
-   REGISTRATION COST CALCULATOR
-   ===================================================================== */
-const regCityBtn = document.getElementById('regCityBtn');
-const regOtherBtn = document.getElementById('regOtherBtn');
-regCityBtn.addEventListener('click', ()=>{ regCityBtn.classList.add('active'); regOtherBtn.classList.remove('active'); });
-regOtherBtn.addEventListener('click', ()=>{ regOtherBtn.classList.add('active'); regCityBtn.classList.remove('active'); });
-
-const regResidentialBtn = document.getElementById('regResidentialBtn');
-const regCommercialBtn = document.getElementById('regCommercialBtn');
-const regAgriBtn = document.getElementById('regAgriBtn');
-[regResidentialBtn, regCommercialBtn, regAgriBtn].forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    [regResidentialBtn, regCommercialBtn, regAgriBtn].forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-  });
-});
-
-/* আনুমানিক উৎসে কর (AIT) হার — এলাকা ও জমির প্রকৃতি অনুযায়ী (গেজেট/মৌজাভেদে প্রকৃত হার ভিন্ন হতে পারে) */
-const AIT_RATES = {
-  city:   { residential:0.03, commercial:0.05, agri:0.01 },
-  other:  { residential:0.01, commercial:0.02, agri:0.005 }
-};
-
-document.getElementById('regCalcBtn').addEventListener('click', ()=>{
-  const errEl = document.getElementById('regErrorMsg');
-  errEl.classList.remove('show'); errEl.textContent='';
-  const value = parseFloat(document.getElementById('regValue').value);
-  if(isNaN(value) || value<=0){
-    errEl.textContent = 'দলিলের সঠিক মূল্য দিন (শূন্যের চেয়ে বড় সংখ্যা)।';
-    errEl.classList.add('show');
-    return;
-  }
-  const isCity = regCityBtn.classList.contains('active');
-  const areaKey = isCity ? 'city' : 'other';
-  const natureKey = regCommercialBtn.classList.contains('active') ? 'commercial'
-                    : regAgriBtn.classList.contains('active') ? 'agri' : 'residential';
-  const natureLabel = natureKey==='commercial' ? 'বাণিজ্যিক' : natureKey==='agri' ? 'কৃষি' : 'আবাসিক';
-  const aitRate = AIT_RATES[areaKey][natureKey];
-
-  const stampDuty = value*0.015;
-  const regFee = value*0.01;
-  const lgt = value*(isCity?0.02:0.03);
-  const ait = value*aitRate;
-  const total = stampDuty+regFee+lgt+ait;
-  const row = (label,amt)=>`<div class="waris-result-row"><div class="heir-label">${label}</div><div class="heir-amount">${fmtWaris(amt)} টাকা</div></div>`;
-  document.getElementById('regResults').innerHTML =
-    row('স্ট্যাম্প শুল্ক (≈১.৫%)', stampDuty) +
-    row('রেজিস্ট্রেশন ফি (≈১%)', regFee) +
-    row(`স্থানীয় সরকার কর (${isCity?'≈২%':'≈৩%'})`, lgt) +
-    row(`উৎসে কর/AIT — ${natureLabel} (≈${fmtWaris(aitRate*100)}%)`, ait) +
-    `<div class="waris-result-row" style="background:var(--blue-tint);"><div class="heir-label">মোট আনুমানিক খরচ</div><div class="heir-amount">${fmtWaris(total)} টাকা</div></div>`;
-});
-
-/* =====================================================================
-   UNIT CONVERTER
-   ===================================================================== */
-const CONV_SQFT = { decimal:435.6, katha:720, bigha:14400, acre:43560, sqft:1, sqm:10.7639 };
-const CONV_LABELS = { decimal:'শতাংশ', katha:'কাঠা', bigha:'বিঘা', acre:'একর', sqft:'বর্গফুট', sqm:'বর্গমিটার' };
-
-document.getElementById('convCalcBtn').addEventListener('click', ()=>{
-  const errEl = document.getElementById('convErrorMsg');
-  errEl.classList.remove('show'); errEl.textContent='';
-  const value = parseFloat(document.getElementById('convValue').value);
-  if(isNaN(value) || value<=0){
-    errEl.textContent = 'সঠিক পরিমাণ দিন (শূন্যের চেয়ে বড় সংখ্যা)।';
-    errEl.classList.add('show');
-    return;
-  }
-  const fromUnit = document.getElementById('convUnit').value;
-  const sqft = value * CONV_SQFT[fromUnit];
-  let html='';
-  Object.keys(CONV_LABELS).forEach(u=>{
-    const eq = sqft / CONV_SQFT[u];
-    const isSame = u===fromUnit;
-    html += `<div class="waris-result-row"${isSame?' style="background:var(--blue-tint);"':''}>
-      <div class="heir-label">${CONV_LABELS[u]}</div>
-      <div class="heir-amount">${fmtWaris(eq)}</div>
-    </div>`;
-  });
-  document.getElementById('convResults').innerHTML = html;
-});
-
-/* =====================================================================
-   FLAT AREA CALCULATOR (super built-up vs carpet area)
-   ===================================================================== */
-const flatS2CBtn = document.getElementById('flatS2CBtn');
-const flatC2SBtn = document.getElementById('flatC2SBtn');
-const flatAreaLabel = document.getElementById('flatAreaLabel');
-function updateFlatLabel(){
-  flatAreaLabel.textContent = flatS2CBtn.classList.contains('active')
-    ? 'সুপার বিল্ট-আপ এরিয়া (বর্গফুট)'
-    : 'কার্পেট এরিয়া (বর্গফুট)';
 }
-flatS2CBtn.addEventListener('click', ()=>{ flatS2CBtn.classList.add('active'); flatC2SBtn.classList.remove('active'); updateFlatLabel(); });
-flatC2SBtn.addEventListener('click', ()=>{ flatC2SBtn.classList.add('active'); flatS2CBtn.classList.remove('active'); updateFlatLabel(); });
 
-document.getElementById('flatCalcBtn').addEventListener('click', ()=>{
-  const errEl = document.getElementById('flatErrorMsg');
-  errEl.classList.remove('show'); errEl.textContent='';
-  const area = parseFloat(document.getElementById('flatArea').value);
-  const loadingPct = parseFloat(document.getElementById('flatLoading').value);
-  const price = parseFloat(document.getElementById('flatPrice').value);
-  if(isNaN(area) || area<=0){
-    errEl.textContent = 'সঠিক এরিয়া দিন (শূন্যের চেয়ে বড় সংখ্যা)।';
-    errEl.classList.add('show');
-    return;
-  }
-  if(isNaN(loadingPct) || loadingPct<0 || loadingPct>=100){
-    errEl.textContent = 'লোডিং ফ্যাক্টর ০ থেকে ৯৯ এর মধ্যে একটি সংখ্যা দিন।';
-    errEl.classList.add('show');
-    return;
-  }
-  const isS2C = flatS2CBtn.classList.contains('active');
-  let superArea, carpetArea;
-  if(isS2C){ superArea = area; carpetArea = area/(1+loadingPct/100); }
-  else { carpetArea = area; superArea = area*(1+loadingPct/100); }
-  const loadingArea = superArea - carpetArea;
+/* ---------- Build the whole page: 6 stacked sections ---------- */
+function buildPage() {
+  const jumpRow = document.getElementById('jumpRow');
+  const container = document.getElementById('managersContainer');
+  jumpRow.innerHTML = '';
+  container.innerHTML = '';
 
-  const row = (label,val,unit='sqft')=>`<div class="waris-result-row"><div class="heir-label">${label}</div><div class="heir-amount">${fmtWaris(val)}${unit==='sqft'?' বর্গফুট':' টাকা'}</div></div>`;
-  let html = row('সুপার বিল্ট-আপ এরিয়া', superArea) + row('কার্পেট এরিয়া (ব্যবহারযোগ্য)', carpetArea) + row('কমন স্পেস/লোডিং এরিয়া', loadingArea);
+  MANAGER_KEYS.forEach((key, idx) => {
+    const num = idx + 1;
 
-  if(!isNaN(price) && price>0){
-    const perSqftSuper = price/superArea;
-    const perSqftCarpet = price/carpetArea;
-    html += row('প্রতি বর্গফুট দাম (সুপার বিল্ট-আপ ভিত্তিতে)', perSqftSuper, 'money');
-    html += `<div class="waris-result-row" style="background:var(--blue-tint);"><div class="heir-label">প্রকৃত প্রতি বর্গফুট দাম (কার্পেট ভিত্তিতে)</div><div class="heir-amount">${fmtWaris(perSqftCarpet)} টাকা</div></div>`;
-  }
-  document.getElementById('flatResults').innerHTML = html;
-});
+    const chip = document.createElement('a');
+    chip.className = 'jump-chip';
+    chip.href = '#section-' + key;
+    chip.id = 'chip-' + key;
+    chip.textContent = 'Manager ' + num;
+    jumpRow.appendChild(chip);
 
-/* =====================================================================
-   LOAN / EMI CALCULATOR
-   ===================================================================== */
-document.getElementById('emiCalcBtn').addEventListener('click', ()=>{
-  const errEl = document.getElementById('emiErrorMsg');
-  errEl.classList.remove('show'); errEl.textContent='';
-  const P = parseFloat(document.getElementById('emiPrincipal').value);
-  const annualRate = parseFloat(document.getElementById('emiRate').value);
-  const years = parseFloat(document.getElementById('emiYears').value);
-  if(isNaN(P) || P<=0 || isNaN(annualRate) || annualRate<=0 || isNaN(years) || years<=0){
-    errEl.textContent = 'ঋণের পরিমাণ, সুদের হার ও মেয়াদ — সবগুলোতে সঠিক সংখ্যা দিন।';
-    errEl.classList.add('show');
-    return;
-  }
-  const r = annualRate/12/100;
-  const n = years*12;
-  const emi = P*r*Math.pow(1+r,n) / (Math.pow(1+r,n)-1);
-  const totalPay = emi*n;
-  const totalInterest = totalPay-P;
+    const section = document.createElement('div');
+    section.className = 'manager-section';
+    section.id = 'section-' + key;
+    section.innerHTML = `
+      <span class="manager-tag">Manager ${num}</span>
 
-  const row = (label,val)=>`<div class="waris-result-row"><div class="heir-label">${label}</div><div class="heir-amount">${fmtWaris(val)} টাকা</div></div>`;
-  document.getElementById('emiResults').innerHTML =
-    `<div class="waris-result-row" style="background:var(--blue-tint);"><div class="heir-label">মাসিক কিস্তি (EMI)</div><div class="heir-amount">${fmtWaris(emi)} টাকা</div></div>` +
-    row('মোট পরিশোধ (মূল+সুদ)', totalPay) +
-    row('মোট সুদ', totalInterest);
-});
+      <div class="manager-row">
+        <span class="manager-label">Name</span>
+        <input type="text" id="mname-${key}" class="manager-input" placeholder="Enter manager name..." maxlength="50" autocomplete="off" disabled>
+      </div>
 
-/* =====================================================================
-   MOUZA RATE VERIFICATION
-   ===================================================================== */
-const MOUZA_UNIT_LABELS = { decimal:'শতাংশ', katha:'কাঠা', bigha:'বিঘা', acre:'একর' };
-const mouzaUnitEl = document.getElementById('mouzaUnit');
-const mouzaRateLabelEl = document.getElementById('mouzaRateLabel');
-mouzaUnitEl.addEventListener('change', ()=>{
-  mouzaRateLabelEl.textContent = `মৌজা রেট — প্রতি ${MOUZA_UNIT_LABELS[mouzaUnitEl.value]} (টাকা)`;
-});
+      <div class="metrics-grid">
+        <div class="metric-card total-card">
+          <div class="metric-label"><span class="dot"></span> Total Points</div>
+          <input type="number" id="total-${key}" class="total-input-field" placeholder="10000" min="0" disabled>
+          <div class="metric-hint" id="totalHint-${key}">tap to edit</div>
+        </div>
+        <div class="metric-card remaining-card" id="remCard-${key}">
+          <div class="metric-label">
+            <span class="dot"></span> Remaining Coin
+            <span class="danger-badge">⚠ Exceeded</span>
+          </div>
+          <div class="metric-value" id="remValue-${key}">—</div>
+          <div class="metric-hint" id="remHint-${key}">set total to calculate</div>
+        </div>
+      </div>
 
-document.getElementById('mouzaCalcBtn').addEventListener('click', ()=>{
-  const errEl = document.getElementById('mouzaErrorMsg');
-  errEl.classList.remove('show'); errEl.textContent='';
-  const area = parseFloat(document.getElementById('mouzaArea').value);
-  const rate = parseFloat(document.getElementById('mouzaRate').value);
-  const deedValue = parseFloat(document.getElementById('mouzaDeedValue').value);
-  if(isNaN(area) || area<=0){
-    errEl.textContent = 'জমির সঠিক পরিমাণ দিন (শূন্যের চেয়ে বড় সংখ্যা)।';
-    errEl.classList.add('show');
-    return;
-  }
-  if(isNaN(rate) || rate<=0){
-    errEl.textContent = 'মৌজা রেট দিন (শূন্যের চেয়ে বড় সংখ্যা) — সাব-রেজিস্ট্রি অফিস বা dlrms.land.gov.bd থেকে যাচাই করে বসান।';
-    errEl.classList.add('show');
-    return;
-  }
-  const unitLabel = MOUZA_UNIT_LABELS[mouzaUnitEl.value];
-  const minValue = area * rate;
-  const row = (label,val)=>`<div class="waris-result-row"><div class="heir-label">${label}</div><div class="heir-amount">${fmtWaris(val)} টাকা</div></div>`;
-  let html = `<div class="waris-result-row" style="background:var(--blue-tint);"><div class="heir-label">সর্বনিম্ন (মৌজা রেট অনুযায়ী) মূল্য</div><div class="heir-amount">${fmtWaris(minValue)} টাকা</div></div>`;
-  html += `<div class="heir-note" style="font-size:12.5px;">হিসাব: ${fmtWaris(area)} ${unitLabel} × ${fmtWaris(rate)} টাকা/${unitLabel}</div>`;
+      <div class="section-header">
+        <span class="section-title">Squad Allocation</span>
+        <div class="section-line"></div>
+        <span class="section-title">10 Players</span>
+      </div>
 
-  if(!isNaN(deedValue) && deedValue>0){
-    if(deedValue >= minValue){
-      html += `<div class="waris-note-box">আপনার দলিলে উল্লেখিত মূল্য (${fmtWaris(deedValue)} টাকা) মৌজা রেটের সর্বনিম্ন মূল্যের সমান বা বেশি — এই মূল্যে রেজিস্ট্রি করা যাবে।</div>`;
-    } else {
-      const shortfall = minValue - deedValue;
-      html += `<div class="waris-note-box">আপনার দলিলে উল্লেখিত মূল্য (${fmtWaris(deedValue)} টাকা) মৌজা রেটের সর্বনিম্ন মূল্যের চেয়ে ${fmtWaris(shortfall)} টাকা কম — এই মূল্যে রেজিস্ট্রি নাও হতে পারে, মূল্য বাড়ানো প্রয়োজন হতে পারে।</div>`;
+      <div class="players-table">
+        <div class="table-head"><span>#</span><span>Player Name</span><span>Coins</span></div>
+        <div id="playersBody-${key}"></div>
+        <div class="total-coins-bar">
+          <span class="total-coins-label">Total Coins Allocated</span>
+          <span class="total-coins-value" id="totalAllocated-${key}">0</span>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="action-btn reset-btn" id="resetBtn-${key}" onclick="resetManager('${key}')" disabled>↺ &nbsp;Reset Manager ${num}</button>
+      </div>
+    `;
+    container.appendChild(section);
+
+    const body = section.querySelector('#playersBody-' + key);
+    for (let i = 0; i < NUM_PLAYERS; i++) {
+      const row = document.createElement('div');
+      row.className = 'player-row';
+      row.innerHTML = `
+        <span class="player-num">${String(i+1).padStart(2,'0')}</span>
+        <input type="text" id="pname-${key}-${i}" class="player-name-input" placeholder="Player ${i+1}" maxlength="30" autocomplete="off" disabled />
+        <div class="coin-input-wrap">
+          <span class="coin-symbol">🪙</span>
+          <input type="number" id="pcoin-${key}-${i}" class="coin-input" placeholder="0" min="0" disabled />
+        </div>
+      `;
+      body.appendChild(row);
+      row.querySelector('.player-name-input').addEventListener('input', () => { recalculate(key); queueSave(key); });
+      row.querySelector('.coin-input').addEventListener('input', () => { recalculate(key); queueSave(key); });
     }
-  }
-  document.getElementById('mouzaResults').innerHTML = html;
-});
 
-/* =====================================================================
-   LAND TAX (KHAJNA) ARREARS CALCULATOR
-   ===================================================================== */
-const LDT_UNIT_LABELS = { decimal:'শতাংশ', katha:'কাঠা', bigha:'বিঘা', acre:'একর' };
-const ldtAgriBtn = document.getElementById('ldtAgriBtn');
-const ldtNonAgriBtn = document.getElementById('ldtNonAgriBtn');
-const ldtRateSection = document.getElementById('ldtRateSection');
-function updateLdtRateVisibility(){
-  ldtRateSection.style.display = ldtAgriBtn.classList.contains('active') ? 'none' : '';
+    document.getElementById('mname-' + key).addEventListener('input', () => { queueSave(key); updateChipLabel(key); });
+    document.getElementById('total-' + key).addEventListener('input', () => { recalculate(key); queueSave(key); });
+  });
 }
-ldtAgriBtn.addEventListener('click', ()=>{ ldtAgriBtn.classList.add('active'); ldtNonAgriBtn.classList.remove('active'); updateLdtRateVisibility(); });
-ldtNonAgriBtn.addEventListener('click', ()=>{ ldtNonAgriBtn.classList.add('active'); ldtAgriBtn.classList.remove('active'); updateLdtRateVisibility(); });
-updateLdtRateVisibility();
 
-document.getElementById('ldtCalcBtn').addEventListener('click', ()=>{
-  const errEl = document.getElementById('ldtErrorMsg');
-  errEl.classList.remove('show'); errEl.textContent='';
-  const area = parseFloat(document.getElementById('ldtArea').value);
-  const unit = document.getElementById('ldtUnit').value;
-  const years = parseInt(document.getElementById('ldtYears').value);
-  const isAgri = ldtAgriBtn.classList.contains('active');
+function updateChipLabel(key) {
+  const idx = MANAGER_KEYS.indexOf(key);
+  const name = document.getElementById('mname-' + key).value;
+  document.getElementById('chip-' + key).textContent = name ? name : ('Manager ' + (idx + 1));
+}
 
-  if(isNaN(area) || area<=0){
-    errEl.textContent = 'জমির সঠিক পরিমাণ দিন (শূন্যের চেয়ে বড় সংখ্যা)।';
-    errEl.classList.add('show');
-    return;
+/* ---------- Load data into a manager's section ---------- */
+function loadIntoUI(key, data) {
+  suppressWrite[key] = true;
+  document.getElementById('mname-' + key).value = data.managerName || '';
+  document.getElementById('total-' + key).value = data.totalPoint || '';
+  const players = data.players || [];
+  for (let i = 0; i < NUM_PLAYERS; i++) {
+    const p = players[i] || {};
+    document.getElementById('pname-' + key + '-' + i).value = p.name || '';
+    document.getElementById('pcoin-' + key + '-' + i).value = p.coins || '';
   }
-  if(isNaN(years) || years<=0){
-    errEl.textContent = 'বকেয়া বছরের সঠিক সংখ্যা দিন (শূন্যের চেয়ে বড়)।';
-    errEl.classList.add('show');
-    return;
+  updateChipLabel(key);
+  recalculate(key);
+  suppressWrite[key] = false;
+}
+
+function recalculate(key) {
+  const totalRaw = parseFloat(document.getElementById('total-' + key).value);
+  const total = isNaN(totalRaw) ? null : totalRaw;
+
+  let allocated = 0;
+  for (let i = 0; i < NUM_PLAYERS; i++) {
+    const v = parseFloat(document.getElementById('pcoin-' + key + '-' + i).value);
+    if (!isNaN(v)) allocated += v;
   }
-  const areaInAcre = area / CONV_SQFT.acre * CONV_SQFT[unit];
-  const row = (label,val)=>`<div class="waris-result-row"><div class="heir-label">${label}</div><div class="heir-amount">${fmtWaris(val)} টাকা</div></div>`;
+  document.getElementById('totalAllocated-' + key).textContent = allocated.toLocaleString();
 
-  if(isAgri && areaInAcre <= 8.25){
-    const total = years * 10;
-    document.getElementById('ldtResults').innerHTML =
-      `<div class="heir-note" style="font-size:12.5px;">৮.২৫ একর (≈২৫ বিঘা) পর্যন্ত কৃষি জমি ভূমি উন্নয়ন কর মওকুফের আওতায় — শুধু বার্ষিক ১০ টাকা দাখিলা ফি প্রযোজ্য।</div>` +
-      row(`${years} বছরের দাখিলা ফি (বার্ষিক ১০ টাকা হারে)`, total) +
-      `<div class="waris-result-row" style="background:var(--blue-tint);"><div class="heir-label">সর্বমোট বকেয়া</div><div class="heir-amount">${fmtWaris(total)} টাকা</div></div>`;
-    return;
-  }
+  const remCard = document.getElementById('remCard-' + key);
+  const remVal = document.getElementById('remValue-' + key);
+  const remHint = document.getElementById('remHint-' + key);
+  const totalHint = document.getElementById('totalHint-' + key);
 
-  const rate = parseFloat(document.getElementById('ldtRate').value);
-  if(isNaN(rate) || rate<=0){
-    errEl.textContent = 'প্রতি একক বার্ষিক কর হার দিন — এটি ldtax.gov.bd থেকে যাচাই করে বসান।';
-    errEl.classList.add('show');
-    return;
-  }
-  const annualTax = area * rate;
-  const principal = annualTax * years;
-  const INTEREST_RATE = 0.0625;
-  let totalWithInterest = 0;
-  for(let k=1; k<=years; k++){
-    const overdueYears = years - k + 1;
-    totalWithInterest += annualTax * Math.pow(1+INTEREST_RATE, overdueYears);
-  }
-  const totalInterest = totalWithInterest - principal;
-
-  document.getElementById('ldtResults').innerHTML =
-    row(`বার্ষিক কর (${fmtWaris(area)} ${LDT_UNIT_LABELS[unit]} × ${fmtWaris(rate)} টাকা)`, annualTax) +
-    row(`মূল বকেয়া কর (${years} বছরের)`, principal) +
-    row('আনুমানিক সুদ (≈৬.২৫% জ্যামিতিক হারে/বছর)', totalInterest) +
-    `<div class="waris-result-row" style="background:var(--blue-tint);"><div class="heir-label">সর্বমোট আনুমানিক বকেয়া</div><div class="heir-amount">${fmtWaris(totalWithInterest)} টাকা</div></div>`;
-});
-
-/* =====================================================================
-   KHATIAN/DAG SHARE CALCULATOR
-   ===================================================================== */
-const shareAnaBtn = document.getElementById('shareAnaBtn');
-const shareDecBtn = document.getElementById('shareDecBtn');
-const shareAnaInputs = document.getElementById('shareAnaInputs');
-const shareDecInputs = document.getElementById('shareDecInputs');
-shareAnaBtn.addEventListener('click', ()=>{
-  shareAnaBtn.classList.add('active'); shareDecBtn.classList.remove('active');
-  shareAnaInputs.style.display=''; shareDecInputs.style.display='none';
-});
-shareDecBtn.addEventListener('click', ()=>{
-  shareDecBtn.classList.add('active'); shareAnaBtn.classList.remove('active');
-  shareDecInputs.style.display=''; shareAnaInputs.style.display='none';
-});
-
-document.getElementById('shareCalcBtn').addEventListener('click', ()=>{
-  const errEl = document.getElementById('shareErrorMsg');
-  errEl.classList.remove('show'); errEl.textContent='';
-  const totalArea = parseFloat(document.getElementById('shareTotalArea').value);
-  const totalUnit = document.getElementById('shareTotalUnit').value;
-  const totalUnitLabel = CONV_LABELS[totalUnit];
-
-  if(isNaN(totalArea) || totalArea<=0){
-    errEl.textContent = 'মোট জমির সঠিক পরিমাণ দিন (শূন্যের চেয়ে বড় সংখ্যা)।';
-    errEl.classList.add('show');
+  if (total === null) {
+    remVal.textContent = '—';
+    remHint.textContent = 'set total to calculate';
+    totalHint.textContent = 'tap to edit';
+    remCard.classList.remove('danger');
     return;
   }
 
-  const isAnaMode = shareAnaBtn.classList.contains('active');
-  let fraction;
+  const remaining = total - allocated;
+  remVal.textContent = remaining.toLocaleString();
+  remHint.textContent = `${allocated.toLocaleString()} / ${total.toLocaleString()} used`;
+  totalHint.textContent = `${remaining.toLocaleString()} remaining`;
+  remCard.classList.toggle('danger', remaining < 0);
+}
 
-  if(isAnaMode){
-    const ana = parseInt(document.getElementById('shareAna').value) || 0;
-    const gonda = parseInt(document.getElementById('shareGonda').value) || 0;
-    const kora = parseInt(document.getElementById('shareKora').value) || 0;
-    const kranti = parseInt(document.getElementById('shareKranti').value) || 0;
-    if(ana<0||ana>15||gonda<0||gonda>19||kora<0||kora>3||kranti<0||kranti>2){
-      errEl.textContent = 'আনা (০-১৫), গন্ডা (০-১৯), কড়া (০-৩), ক্রান্তি (০-২) এর মধ্যে সঠিক মান দিন।';
-      errEl.classList.add('show');
-      return;
-    }
-    if(ana===0 && gonda===0 && kora===0 && kranti===0){
-      errEl.textContent = 'আপনার অংশ (আনা-গন্ডা-কড়া-ক্রান্তি) দিন।';
-      errEl.classList.add('show');
-      return;
-    }
-    /* 1 আনা = ২০ গন্ডা = ৮০ কড়া = ২৪০ ক্রান্তি; পূর্ণ সম্পত্তি ১৬ আনা = ৩৮৪০ ক্রান্তি */
-    const shareKrantiTotal = ana*240 + gonda*12 + kora*3 + kranti;
-    fraction = shareKrantiTotal / 3840;
+/* ---------- Save (admin only, debounced) ---------- */
+function collectManagerData(key) {
+  return {
+    managerName: document.getElementById('mname-' + key).value,
+    totalPoint: document.getElementById('total-' + key).value,
+    players: Array.from({length: NUM_PLAYERS}, (_, i) => ({
+      name: document.getElementById('pname-' + key + '-' + i).value,
+      coins: document.getElementById('pcoin-' + key + '-' + i).value
+    }))
+  };
+}
+
+function queueSave(key) {
+  if (suppressWrite[key] || !isAdmin) return;
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(() => {
+    const data = collectManagerData(key);
+    managersData[key] = data;
+    db.ref('managers/' + key).set(data).catch(err => alert('Save failed: ' + err.message));
+  }, 250);
+}
+
+/* ---------- Firebase realtime listeners ---------- */
+function attachListeners() {
+  MANAGER_KEYS.forEach(key => {
+    db.ref('managers/' + key).on('value', snap => {
+      managersData[key] = snap.val() || emptyManager();
+      loadIntoUI(key, managersData[key]);
+    });
+  });
+}
+
+/* ---------- Admin auth (PIN-based) ---------- */
+function openLoginModal() {
+  document.getElementById('loginModal').classList.add('open');
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginPin').value = '';
+  document.getElementById('loginPin').focus();
+}
+function closeLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
+function doLogin() {
+  const pin = document.getElementById('loginPin').value.trim();
+  if (pin === ADMIN_PIN) {
+    sessionStorage.setItem('typAdmin', '1');
+    closeLoginModal();
+    setAdminState(true);
   } else {
-    const dec = parseFloat(document.getElementById('shareDecimalValue').value);
-    if(isNaN(dec) || dec<=0 || dec>1){
-      errEl.textContent = 'দশমিক অংশ ০ থেকে ১ এর মধ্যে দিন (যেমন: ০.৫০০০)।';
-      errEl.classList.add('show');
-      return;
-    }
-    fraction = dec;
+    document.getElementById('loginError').textContent = 'Wrong PIN';
   }
+}
+function doLogout() {
+  sessionStorage.removeItem('typAdmin');
+  setAdminState(false);
+}
+document.getElementById('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
-  const resultArea = fraction * totalArea;
-  const pct = fraction * 100;
-  const row = (label,val,unit='')=>`<div class="waris-result-row"><div class="heir-label">${label}</div><div class="heir-amount">${fmtWaris(val)}${unit}</div></div>`;
-  document.getElementById('shareResults').innerHTML =
-    row('অংশের ভগ্নাংশ', fraction, '') + '' +
-    `<div class="waris-result-row"><div class="heir-label">অংশের শতকরা হার</div><div class="heir-amount">${fmtWaris(pct)}%</div></div>` +
-    `<div class="waris-result-row" style="background:var(--blue-tint);"><div class="heir-label">আপনার প্রকৃত জমির পরিমাণ</div><div class="heir-amount">${fmtWaris(resultArea)} ${totalUnitLabel}</div></div>`;
-});
+function setAllInputsDisabled(disabled) {
+  MANAGER_KEYS.forEach(key => {
+    document.getElementById('mname-' + key).disabled = disabled;
+    document.getElementById('total-' + key).disabled = disabled;
+    document.getElementById('resetBtn-' + key).disabled = disabled;
+    for (let i = 0; i < NUM_PLAYERS; i++) {
+      document.getElementById('pname-' + key + '-' + i).disabled = disabled;
+      document.getElementById('pcoin-' + key + '-' + i).disabled = disabled;
+    }
+  });
+}
+
+function setAdminState(admin) {
+  isAdmin = admin;
+  const pill = document.getElementById('statusPill');
+  const text = document.getElementById('statusText');
+  const btn = document.getElementById('adminBtn');
+
+  setAllInputsDisabled(!isAdmin);
+
+  if (isAdmin) {
+    pill.className = 'status-pill admin';
+    text.textContent = 'Admin Mode';
+    btn.textContent = 'Logout';
+    btn.classList.add('logout');
+    btn.onclick = doLogout;
+  } else {
+    pill.className = 'status-pill viewing';
+    text.textContent = 'View Only';
+    btn.textContent = 'Admin Login';
+    btn.classList.remove('logout');
+    btn.onclick = openLoginModal;
+  }
+}
+
+/* Restore admin state if this tab already unlocked it earlier */
+setAdminState(sessionStorage.getItem('typAdmin') === '1');
+
+/* ---------- Actions ---------- */
+function downloadHTML() {
+  const content = document.documentElement.outerHTML;
+  const blob = new Blob([content], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'TYP_Championship_Dashboard.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function resetManager(key) {
+  if (!isAdmin) return;
+  const idx = MANAGER_KEYS.indexOf(key) + 1;
+  if (!confirm('Reset Manager ' + idx + ' data? This cannot be undone.')) return;
+  const fresh = emptyManager();
+  managersData[key] = fresh;
+  db.ref('managers/' + key).set(fresh);
+}
+
+/* ---------- Init ---------- */
+buildPage();
+MANAGER_KEYS.forEach(key => loadIntoUI(key, emptyManager()));
+attachListeners();
 </script>
-</body>
-</html>
+
+
+</body></html>
