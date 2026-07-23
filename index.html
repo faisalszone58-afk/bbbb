@@ -35,6 +35,11 @@
     --shadow-md: 0 4px 18px rgba(46,74,77,0.10), 0 2px 6px rgba(46,74,77,0.05);
   }
 
+  html {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
   body {
     background-color: var(--surface-2);
     background-image: radial-gradient(circle, rgba(118,171,174,0.16) 1px, transparent 1px);
@@ -42,12 +47,21 @@
     color: var(--text-1);
     font-family: 'Bellefair', serif;
     min-height: 100vh;
+    overflow-x: hidden;
+    width: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
   .page-wrap {
     max-width: 820px;
     margin: 0 auto;
     padding: 2rem 1.5rem 5rem;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    .page-wrap { padding: 1.25rem 1rem 4rem; }
   }
 
   /* ── Top bar ── */
@@ -65,6 +79,9 @@
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
     flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .top-bar { margin: -1.25rem -1rem 1.25rem; padding: 0.75rem 1rem; }
   }
 
   .status-pill {
@@ -104,23 +121,37 @@
   .admin-btn.logout:hover { border-color: var(--red-border); color: var(--red); background: var(--red-bg); }
 
   /* ── Header ── */
-  .header-bar { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 0.25rem; }
-  .trophy-icon { font-size: 1.9rem; line-height: 1; }
+  .header-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem; }
+  .trophy-icon { font-size: 1.9rem; line-height: 1; flex-shrink: 0; }
   h1.tournament-name {
     font-family: 'Titan One', sans-serif;
-    font-size: clamp(2.4rem, 7vw, 4.2rem);
-    letter-spacing: 0.06em;
+    font-size: clamp(1.55rem, 7.2vw, 4.2rem);
+    letter-spacing: 0.03em;
     color: var(--accent);
-    line-height: 1;
+    line-height: 1.05;
+    background: linear-gradient(120deg, var(--accent) 35%, #4f8487 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+  @media (max-width: 480px) {
+    .trophy-icon { font-size: 1.5rem; }
   }
   .subtitle-bar {
     font-family: 'Bellefair', serif;
     font-size: 0.68rem;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.14em;
     color: var(--text-3);
     text-transform: uppercase;
     margin-bottom: 1rem;
     padding-left: 0.1rem;
+    overflow-wrap: break-word;
+  }
+  @media (max-width: 400px) {
+    .subtitle-bar { letter-spacing: 0.08em; font-size: 0.62rem; }
   }
 
   /* ── Quick-jump chips ── */
@@ -131,6 +162,7 @@
     margin-bottom: 2.5rem;
   }
   @media (max-width: 640px) { .jump-row { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 360px) { .jump-row { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; } }
   .jump-chip {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -178,6 +210,7 @@
     border-radius: 999px;
     padding: 0.3rem 0.75rem;
     margin-bottom: 0.9rem;
+    box-shadow: 0 1px 4px rgba(118,171,174,0.15);
   }
 
   .manager-row {
@@ -186,10 +219,15 @@
     gap: 0.75rem;
     margin-bottom: 1.25rem;
     padding: 0.9rem 1.2rem;
-    background: var(--surface);
+    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 160%);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .manager-row:focus-within {
+    border-color: var(--teal-border);
+    box-shadow: 0 0 0 3px var(--teal-light), var(--shadow-sm);
   }
   .manager-label {
     font-size: 0.72rem;
@@ -218,11 +256,23 @@
   .metric-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 1.1rem 1.3rem;
     position: relative;
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+    min-width: 0;
   }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--teal), rgba(118,171,174,0.15));
+  }
+  .metric-card.remaining-card.danger::before { background: linear-gradient(90deg, var(--red), rgba(193,88,74,0.15)); }
+  .metric-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .metric-card.total-card { border-color: var(--teal-border); }
   .metric-card.remaining-card { border-color: var(--teal-border); }
   .metric-card.remaining-card.danger { border-color: var(--red-border) !important; background: var(--red-bg); }
@@ -293,15 +343,15 @@
   .players-table {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 14px;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
   }
   .table-head {
     display: grid;
-    grid-template-columns: 2.5rem 1fr 1fr;
-    gap: 0;
-    padding: 0.65rem 1.1rem;
+    grid-template-columns: 1.8rem 1fr minmax(70px, 96px);
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
     background: var(--surface-3);
     border-bottom: 1px solid var(--border);
   }
@@ -309,15 +359,16 @@
   .table-head span:last-child { text-align: right; }
   .player-row {
     display: grid;
-    grid-template-columns: 2.5rem 1fr 1fr;
-    gap: 0;
+    grid-template-columns: 1.8rem 1fr minmax(70px, 96px);
+    gap: 0.5rem;
     align-items: center;
-    padding: 0.55rem 1.1rem;
+    padding: 0.6rem 1rem;
     border-bottom: 1px solid var(--border);
     transition: background 0.12s;
+    min-width: 0;
   }
   .player-row:last-child { border-bottom: none; }
-  .player-row:hover { background: var(--surface-2); }
+  .player-row:hover, .player-row:focus-within { background: var(--surface-2); }
   .player-num { font-family: 'Bellefair', serif; font-size: 0.75rem; color: var(--text-3); font-weight: 600; }
   .player-name-input {
     background: transparent;
@@ -328,11 +379,12 @@
     font-size: 0.88rem;
     font-weight: 500;
     width: 100%;
+    min-width: 0;
     caret-color: var(--teal);
   }
   .player-name-input::placeholder { color: var(--text-3); font-weight: 400; font-size: 0.82rem; }
-  .coin-input-wrap { display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; }
-  .coin-symbol { font-size: 0.72rem; color: var(--text-3); }
+  .coin-input-wrap { display: flex; justify-content: flex-end; align-items: center; gap: 0.3rem; min-width: 0; }
+  .coin-symbol { font-size: 0.72rem; color: var(--text-3); flex-shrink: 0; }
   .coin-input {
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -343,11 +395,17 @@
     font-size: 0.85rem;
     font-weight: 600;
     text-align: right;
-    padding: 0.32rem 0.6rem;
-    width: 102px;
+    padding: 0.32rem 0.5rem;
+    width: 100%;
+    min-width: 0;
     transition: border-color 0.15s, background 0.15s;
     -moz-appearance: textfield;
     caret-color: var(--teal);
+  }
+  @media (max-width: 400px) {
+    .table-head, .player-row { grid-template-columns: 1.4rem 1fr minmax(58px, 74px); gap: 0.35rem; padding-left: 0.75rem; padding-right: 0.75rem; }
+    .player-name-input { font-size: 0.82rem; }
+    .coin-input { font-size: 0.78rem; padding: 0.3rem 0.4rem; }
   }
   .coin-input::-webkit-outer-spin-button,
   .coin-input::-webkit-inner-spin-button { -webkit-appearance: none; }
@@ -362,8 +420,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.8rem 1.1rem;
-    background: var(--surface-3);
+    background: linear-gradient(180deg, var(--surface-3), var(--teal-light));
     border-top: 1px solid var(--teal-border);
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
   .total-coins-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-3); }
   .total-coins-value { font-family: 'Bellefair', serif; font-size: 1rem; font-weight: 600; color: var(--accent); }
@@ -392,6 +452,16 @@
   .action-btn:disabled:hover { border-color: var(--border); color: var(--text-2); background: var(--surface); }
 
   .global-actions { display: flex; justify-content: center; margin-top: 1rem; }
+  .global-actions .action-btn {
+    background: linear-gradient(135deg, var(--teal), #5c9296);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+    padding: 0.75rem 1.9rem;
+    font-size: 0.85rem;
+    box-shadow: 0 6px 18px rgba(118,171,174,0.35);
+  }
+  .global-actions .action-btn:hover { box-shadow: 0 8px 22px rgba(118,171,174,0.45); transform: translateY(-1px); }
 
   .footer {
     text-align: center;
@@ -406,16 +476,137 @@
   /* ── Login modal ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,24,0.45); display: none; align-items: center; justify-content: center; z-index: 50; padding: 1.5rem; }
   .modal-overlay.open { display: flex; }
-  .modal-box { background: var(--surface); border-radius: 14px; padding: 1.75rem; width: 100%; max-width: 340px; box-shadow: var(--shadow-md); }
+  .modal-box { background: var(--surface); border-radius: 16px; padding: 1.75rem; width: 100%; max-width: 340px; box-shadow: var(--shadow-md); border-top: 3px solid var(--teal); }
   .modal-title { font-family: 'Titan One', sans-serif; font-size: 1.4rem; letter-spacing: 0.02em; color: var(--accent); margin-bottom: 1rem; }
   .modal-input { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; font-family: 'Bellefair', serif; font-size: 0.9rem; color: var(--text-1); margin-bottom: 0.7rem; outline: none; }
   .modal-input:focus { border-color: var(--teal-border); box-shadow: 0 0 0 3px var(--teal-light); }
   .modal-error { font-size: 0.76rem; color: var(--red); margin-bottom: 0.6rem; min-height: 1em; }
   .modal-actions { display: flex; gap: 0.6rem; margin-top: 0.4rem; }
   .modal-actions .action-btn { flex: 1; justify-content: center; }
+
+  /* ── Intro celebration animation ── */
+  .siuu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 45%, #2E4A4D 0%, #16292b 75%);
+    pointer-events: none;
+    animation: siuuFadeOut 0.6s ease 1.85s forwards;
+  }
+  .siuu-stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: scale(0.7);
+    opacity: 0;
+    animation: siuuStageIn 0.45s cubic-bezier(.2,1.4,.4,1) 0.05s forwards;
+  }
+  .siuu-figure {
+    width: clamp(90px, 22vw, 140px);
+    height: auto;
+    filter: drop-shadow(0 10px 22px rgba(0,0,0,0.35));
+    transform-origin: bottom center;
+    animation: siuuJump 0.9s cubic-bezier(.3,0,.2,1) 0.35s both;
+  }
+  .siuu-text {
+    margin-top: 0.6rem;
+    font-family: 'Titan One', sans-serif;
+    font-size: clamp(1.8rem, 8vw, 3.2rem);
+    letter-spacing: 0.05em;
+    color: #fff;
+    text-shadow: 0 0 18px rgba(118,171,174,0.9), 0 4px 12px rgba(0,0,0,0.4);
+    opacity: 0;
+    transform: scale(0.4) rotate(-4deg);
+    animation: siuuTextPop 0.55s cubic-bezier(.2,1.6,.3,1) 0.85s forwards;
+  }
+  .siuu-ring {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid var(--teal);
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    animation: siuuRing 0.8s ease-out 0.75s forwards;
+  }
+  .siuu-spark {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    opacity: 0;
+    animation: siuuSpark 0.7s ease-out 0.8s forwards;
+  }
+
+  @keyframes siuuStageIn {
+    to { transform: scale(1); opacity: 1; }
+  }
+  @keyframes siuuJump {
+    0%   { transform: translateY(0) scale(1); }
+    35%  { transform: translateY(-22px) scale(1.03); }
+    55%  { transform: translateY(-26px) scale(1.05); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @keyframes siuuTextPop {
+    0%   { opacity: 0; transform: scale(0.4) rotate(-4deg); }
+    60%  { opacity: 1; transform: scale(1.12) rotate(1deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+  @keyframes siuuRing {
+    0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(7); opacity: 0; }
+  }
+  @keyframes siuuSpark {
+    0%   { transform: translate(-50%, -50%) rotate(var(--a, 0deg)) translateY(0) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) rotate(var(--a, 0deg)) translateY(-90px) scale(0); opacity: 0; }
+  }
+  @keyframes siuuFadeOut {
+    to { opacity: 0; visibility: hidden; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .siuu-overlay { display: none; }
+  }
 </style>
 </head>
 <body>
+<div class="siuu-overlay" id="siuuOverlay" aria-hidden="true">
+  <div class="siuu-stage">
+    <div class="siuu-ring"></div>
+    <span class="siuu-spark" style="--a:0deg"></span>
+    <span class="siuu-spark" style="--a:45deg"></span>
+    <span class="siuu-spark" style="--a:90deg"></span>
+    <span class="siuu-spark" style="--a:135deg"></span>
+    <span class="siuu-spark" style="--a:180deg"></span>
+    <span class="siuu-spark" style="--a:225deg"></span>
+    <span class="siuu-spark" style="--a:270deg"></span>
+    <span class="siuu-spark" style="--a:315deg"></span>
+    <svg class="siuu-figure" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="124" rx="26" ry="5" fill="#000" opacity="0.25"/>
+      <circle cx="50" cy="20" r="13" fill="#F3C9A0"/>
+      <path d="M40 14 Q50 4 60 14 Q60 22 50 22 Q40 22 40 14Z" fill="#2b2b2b"/>
+      <rect x="38" y="32" width="24" height="38" rx="10" fill="var(--teal)"/>
+      <path d="M38 40 L14 24" stroke="var(--teal)" stroke-width="9" stroke-linecap="round"/>
+      <path d="M14 24 L8 10" stroke="#F3C9A0" stroke-width="8" stroke-linecap="round"/>
+      <path d="M62 40 L86 24" stroke="var(--teal)" stroke-width="9" stroke-linecap="round"/>
+      <path d="M86 24 L92 10" stroke="#F3C9A0" stroke-width="8" stroke-linecap="round"/>
+      <path d="M42 68 L30 108" stroke="#2E4A4D" stroke-width="11" stroke-linecap="round"/>
+      <path d="M58 68 L70 108" stroke="#2E4A4D" stroke-width="11" stroke-linecap="round"/>
+      <rect x="20" y="105" width="16" height="8" rx="3" fill="#fff"/>
+      <rect x="64" y="105" width="16" height="8" rx="3" fill="#fff"/>
+    </svg>
+    <div class="siuu-text">SIUUU!</div>
+  </div>
+</div>
 <div class="page-wrap">
 
   <div class="top-bar">
@@ -781,6 +972,80 @@ function resetManager(key) {
   managersData[key] = fresh;
   db.ref('managers/' + key).set(fresh);
 }
+
+/* ---------- Intro celebration cleanup + sound ---------- */
+(function(){
+  const overlay = document.getElementById('siuuOverlay');
+  if (!overlay) return;
+  overlay.addEventListener('animationend', (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+  setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 3000);
+
+  const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReducedMotion) return;
+
+  /* Synthesized rising "siuuu" whistle — generated tone, not a recorded clip */
+  function playSiuuSound() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new Ctx();
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const vibrato = ctx.createOscillator();
+      const vibratoGain = ctx.createGain();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      vibrato.type = 'sine';
+      vibrato.frequency.value = 7;
+      vibratoGain.gain.value = 18;
+      vibrato.connect(vibratoGain);
+      vibratoGain.connect(osc.frequency);
+
+      // "si" — quick rising sweep
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(1050, now + 0.18);
+      // "uuuu" — sustained high note with slight fall
+      osc.frequency.setValueAtTime(1050, now + 0.18);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.85);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.22, now + 0.06);
+      gain.gain.setValueAtTime(0.22, now + 0.55);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 2400;
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      vibrato.start(now);
+      osc.stop(now + 1.0);
+      vibrato.stop(now + 1.0);
+      osc.onended = () => ctx.close();
+    } catch (err) { /* Web Audio unsupported — fail silently */ }
+  }
+
+  let soundPlayed = false;
+  function tryPlaySiuu() {
+    if (soundPlayed) return;
+    soundPlayed = true;
+    playSiuuSound();
+  }
+  tryPlaySiuu();
+  // Some mobile browsers block audio until the user has interacted at least
+  // once — if that happens, play it on the very next tap/click instead.
+  document.addEventListener('pointerdown', function fallback() {
+    document.removeEventListener('pointerdown', fallback);
+    tryPlaySiuu();
+  }, { once: true });
+})();
 
 /* ---------- Init ---------- */
 buildPage();
