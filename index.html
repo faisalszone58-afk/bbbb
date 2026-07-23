@@ -980,28 +980,31 @@ function resetManager(key) {
   if (prefersReducedMotion) return;
 
   /* Real "Siuuu" clip, embedded as base64 in the <audio id="siuuAudio"> tag above */
+  let soundPlaying = false;
   function playSiuuSound() {
+    if (soundPlaying) return;
     const audioEl = document.getElementById('siuuAudio');
     if (!audioEl) return;
     audioEl.currentTime = 0;
     audioEl.volume = 0.85;
     const p = audioEl.play();
-    if (p && p.catch) p.catch(() => { /* autoplay blocked — fallback below will retry */ });
+    if (p && p.then) {
+      p.then(() => { soundPlaying = true; })
+       .catch(() => { /* autoplay blocked — fallback below will retry on next tap */ });
+    } else {
+      soundPlaying = true;
+    }
   }
 
-  let soundPlayed = false;
-  function tryPlaySiuu() {
-    if (soundPlayed) return;
-    soundPlayed = true;
+  playSiuuSound();
+  // Some mobile/desktop browsers block audio until the user has interacted
+  // with the page at least once — keep retrying on every tap/click until
+  // playback actually succeeds, then stop listening.
+  function fallback() {
     playSiuuSound();
+    if (soundPlaying) document.removeEventListener('pointerdown', fallback);
   }
-  tryPlaySiuu();
-  // Some mobile browsers block audio until the user has interacted at least
-  // once — if that happens, play it on the very next tap/click instead.
-  document.addEventListener('pointerdown', function fallback() {
-    document.removeEventListener('pointerdown', fallback);
-    tryPlaySiuu();
-  }, { once: true });
+  document.addEventListener('pointerdown', fallback);
 })();
 
 
