@@ -658,6 +658,17 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 /* ============================================================
+   Anonymous auth — signs every visitor in silently so writes
+   carry a valid Firebase auth token. This fixes "Save failed:
+   PERMISSION_DENIED" if the Realtime Database rules require
+   auth != null for writes (the PIN below only gates the UI,
+   it is not itself a Firebase login).
+   ============================================================ */
+firebase.auth().signInAnonymously().catch(err => {
+  console.error('Anonymous sign-in failed:', err.message);
+});
+
+/* ============================================================
    Admin PIN
    ------------------------------------------------------------
    Change this to whatever PIN you want. This is a simple
@@ -677,17 +688,19 @@ const ADMIN_PIN = "966066";
      "rules": {
        "managers": {
          ".read": true,
-         ".write": true
+         ".write": "auth != null"
        }
      }
    }
 
-   Since there is no Firebase Auth anymore, the database itself
-   can't tell an "admin" apart from anyone else — the PIN only
-   locks the UI, not the database. Anyone with the database URL
-   could technically write to it directly (e.g. via a script).
-   If that risk matters to you, keep Firebase Auth instead of a
-   plain PIN.
+   This page now signs every visitor in anonymously (see above),
+   so ".write": "auth != null" is enough to stop PERMISSION_DENIED
+   errors while still blocking raw, unauthenticated script access
+   to the database URL. The PIN still gates the UI itself — only
+   people who know the PIN see editable fields — but the database
+   layer now also requires a valid (anonymous) auth token to write.
+   If your current rules already say ".write": true, this change
+   still works fine and needs no rule update.
    ============================================================ */
 
 const NUM_PLAYERS = 10;
