@@ -976,8 +976,9 @@ function resetManager(key) {
   });
   setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 3200);
 
-  const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReducedMotion) return;
+  // NOTE: reduced-motion only skips the visual animation (handled in CSS).
+  // It must NOT skip the sound — that was muting audio for anyone with
+  // "Reduce Motion" turned on (a common battery-saver setting on phones).
 
   /* Real "Siuuu" clip, embedded as base64 in the <audio id="siuuAudio"> tag above */
   let soundPlaying = false;
@@ -990,21 +991,30 @@ function resetManager(key) {
     const p = audioEl.play();
     if (p && p.then) {
       p.then(() => { soundPlaying = true; })
-       .catch(() => { /* autoplay blocked — fallback below will retry on next tap */ });
+       .catch(() => { /* autoplay blocked — fallback below will retry on first user gesture */ });
     } else {
       soundPlaying = true;
     }
   }
 
   playSiuuSound();
-  // Some mobile/desktop browsers block audio until the user has interacted
-  // with the page at least once — keep retrying on every tap/click until
-  // playback actually succeeds, then stop listening.
+  // Almost every browser blocks audio-with-sound autoplay until the user has
+  // interacted with the page at least once. Listen for the widest possible
+  // set of "first interaction" events and retry there — this reliably
+  // unlocks audio on Chrome, Safari (desktop + iOS), Firefox and Edge.
   function fallback() {
     playSiuuSound();
-    if (soundPlaying) document.removeEventListener('pointerdown', fallback);
+    if (soundPlaying) {
+      document.removeEventListener('pointerdown', fallback, true);
+      document.removeEventListener('touchstart', fallback, true);
+      document.removeEventListener('click', fallback, true);
+      document.removeEventListener('keydown', fallback, true);
+    }
   }
-  document.addEventListener('pointerdown', fallback);
+  document.addEventListener('pointerdown', fallback, true);
+  document.addEventListener('touchstart', fallback, true);
+  document.addEventListener('click', fallback, true);
+  document.addEventListener('keydown', fallback, true);
 })();
 
 
